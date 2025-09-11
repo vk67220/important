@@ -1,0 +1,8 @@
+Ansible helps us to automate the process
+
+Chef & Puppet works on PULL mechanism
+Ansible works on PUSH mechanism
+
+PULL mechanism works on the principle of checking the configuration information from the central server (Ansible VM)
+Central server pushes the configuration information on target servers on immediate basis
+
