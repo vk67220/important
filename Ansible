@@ -6,3 +6,22 @@ Ansible works on PUSH mechanism
 PULL mechanism works on the principle of checking the configuration information from the central server (Ansible VM)
 Central server pushes the configuration information on target servers on immediate basis
 
+Ansible uses playbooks to automate deployment, manage, build, test and configure
+
+
+How ansible main server will be connecting to the worker nodes?
+	- by using SSH connection
+
+Ansible Main Components;
+1. Playbook
+2. Inventory file - all the worker node information will be available in the Inventory File
+
+Ansible Server - used to communicate with Worker Nodes and install packages, deployments..
+Worker Node takes the commands from Ansible Server and works according to it
+
+
+Methods of working with ansible
+1. Adhoc Commands - these are simple Linux commands used for temporary works. These commands will be over-rider and cannot be reused
+2. Modules
+3. Playbook
+
