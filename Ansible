@@ -25,3 +25,32 @@ Methods of working with ansible
 2. Modules
 3. Playbook
 
+1. Adhoc Commands - these are simple Linux commands used for temporary works. These commands will be over-rider and cannot be reused
+
+ansible all -a "systemctl status apache2"
+
+Modules:-
+
+modules are buliding blocks of ansible
+modules works on key value pairs
+
+-------------Categories of Ansible Modules-------------
+
+System modules
+Package Management modules
+File & Directory Modules
+Command Execution modules
+Networking & Security modules
+Cloud providers modules
+database modules
+
+
+adhoc & module commands
+
+ansible all -m yum -a "name=git state=present" --become
+ansible all -m apt -a "name=git state=present" --become
+ansible all -m copy -a "src=app.py dest=/tmp"
+
+
+
+
