@@ -51,6 +51,20 @@ ansible all -m yum -a "name=git state=present" --become
 ansible all -m apt -a "name=git state=present" --become
 ansible all -m copy -a "src=app.py dest=/tmp"
 
+start/stop/restart
+
+ansible all -m service -a "name=httpd state=started" 
+
+Playbooks
+=========================
+
+playbook is collection of multiple modules
+we cane run multiple modules at a time using playbooks
+we can always reuse the playbooks at any time
+
+
+
+
 
 
 
