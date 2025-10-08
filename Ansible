@@ -85,6 +85,10 @@ yml file:-
 ...
 
 
+Variables:
 
+   used to simplify work
+1.static - define inside the playbook
+2.dynamic - not defined inside the playbook
 
 
