@@ -63,6 +63,23 @@ we cane run multiple modules at a time using playbooks
 we can always reuse the playbooks at any time
 
 
+yml file:-
+
+---
+- hosts: all
+  tasks:
+   - name: Install httpd
+     yum: name=httpd state=present
+
+   - name: Start httpd
+     service: name=httpd state=started
+
+   - name: User creation
+     user: name=vk67220 state=present
+
+   - name: Copy file
+     copy: src=/root/demo.py dest=/root
+...
 
 
 
