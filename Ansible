@@ -29,7 +29,9 @@ Methods of working with ansible
 
 ansible all -a "systemctl status apache2"
 
-Modules:-
+Ex:-SHELL, COMMAND, RAW
+
+2.Modules:-
 
 modules are buliding blocks of ansible
 modules works on key value pairs
