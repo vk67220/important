@@ -91,4 +91,4 @@ Variables:
 1.static - define inside the playbook
 2.dynamic - not defined inside the playbook
 
-
+dynamic variables :- ansible-playbook playbook.yml --extra-vars "a=git"
