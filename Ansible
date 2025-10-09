@@ -91,4 +91,20 @@ Variables:
 1.static - define inside the playbook
 2.dynamic - not defined inside the playbook
 
-dynamic variables :- ansible-playbook playbook.yml --extra-vars "a=git"
+dynamic variables :- ansible-playbook playbook.yml --extra-vars "packages=git"
+
+---
+- hosts: all
+  vars:
+    packages:
+      - git*
+      - apache2
+      - httpd
+      - docker.io
+      - tree
+  
+  tasks:
+    - name: Install selected packages
+      apt: name="{{item}}" state=present
+      with_items: "{{packages}}"
+...
