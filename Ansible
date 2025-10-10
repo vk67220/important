@@ -118,3 +118,17 @@ Handlers:-
 
 One task is dependent on another task then we will use HANDLERS
 MODULE: NOTIFY
+
+---
+- hosts: all
+  tasks:
+   - name: Install httpd on AMI
+     yum: name=httpd state=present update_cache=true
+     notify: start httpd
+
+  handlers:
+    - name: start httpd
+      service: name=httpd state=started
+...
+
+
