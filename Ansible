@@ -130,5 +130,23 @@ MODULE: NOTIFY
     - name: start httpd
       service: name=httpd state=started
 ...
+=====================================================================================
+ignore_errors: yes
+=====================================================================================
 
+when you want task to continue even if it fails
+
+=====================================================================================
+Ansible vault:-
+=====================================================================================
+
+ansible vault is a security feature that used to encrypt the sensitive data
+if we want to access the data which is inside the vault,then we need to give vault password.
+
+ex:-
+
+ansible-vault create secret.yml
+ansible-vault encrypt secret.yml 
+ansible-vault decrypt secret.yml 
+ansible-vault edit secret.yml
 
