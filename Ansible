@@ -113,3 +113,8 @@ Conditions:-
 
 when: ansible_os_family == "RedHat"
 when: ansible_os_family == "Debian"
+
+Handlers:-
+
+One task is dependent on another task then we will use HANDLERS
+MODULE: NOTIFY
