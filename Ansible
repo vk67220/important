@@ -150,3 +150,34 @@ ansible-vault encrypt secret.yml
 ansible-vault decrypt secret.yml 
 ansible-vault edit secret.yml
 
+
+
+import_tasks is static — tasks are parsed and loaded before execution, so you can’t use variables or conditions for the file name.
+
+ex:-
+
+---
+- hosts: all
+  become: yes
+  tasks:
+   - name: create a directory using import_tasks
+     import_tasks: common.yml
+
+include_tasks is dynamic — tasks are included at runtime, allowing variables, loops, and conditional logic.
+
+ex:-
+---
+- hosts: all
+  become: yes
+  tasks:
+   - name: Install on Redhat
+     include_tasks: redhat.yml
+     when: ansible_os_family == "RedHat"
+
+   - name: Install on Debian
+     include_tasks: Debian.yml
+     when: ansible_os_family == "Debian"
+
+
+
+
