@@ -178,7 +178,10 @@ ex:-
      include_tasks: Debian.yml
      when: ansible_os_family == "Debian"
 
-
+===========================================================================================================
 Templates:-used to create dynamic files,example configuration files or html pages
+
+Gathering Facts:
+it's automatically collects system information like -os,ip address,cpu,memory etc....
 
 
