@@ -185,3 +185,11 @@ Gathering Facts:
 it's automatically collects system information like -os,ip address,cpu,memory etc....
 
 
+Ansible roles :-
+
+role is used to divide playbook into directory structure
+we can organize the playbook
+we can encapsulate the playbook
+we can reduce length of the playbook
+
+
