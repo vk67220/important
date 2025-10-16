@@ -179,5 +179,6 @@ ex:-
      when: ansible_os_family == "Debian"
 
 
+Templates:-used to create dynamic files,example configuration files or html pages
 
 
