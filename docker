@@ -1,1 +1,17 @@
+Docker:-
+
+docker is a platform for containerization that packages application and their dependencies into light weight,portable container.
+
+docker container:-
+
+docker container is a running instance of docker image 
+it consists everything that need to run an application
+
+code,
+runtime,
+system tools,
+libraries,
+configurations
+
+
 
