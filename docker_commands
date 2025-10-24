@@ -1,0 +1,255 @@
+# To search for a specific image
+$ docker search <ImageName>
+Ex: docker search amazonlinux
+
+# To pull/download the image
+$ docker pull <ImageName>
+Ex: docker pull amazonlinux
+
+# To see the list of docker images
+$ docker images
+#You will see the details of the image such as Image ID and Size.
+
+# To create and run the container
+$ docker run -it <ContainerName> <ImageName>
+Ex: docker run -it container001 amazonlinux
+
+# To see the list of running containers
+$ docker ps
+
+# To stop a container
+$ docker stop <ContainerName>
+
+# To see list of both running and not running (stopped) containers
+$ docker ps -a
+
+# To restart the container
+$ docker start <ContainerName>
+
+# To kill a container
+$ docker kill <ContainerName>
+
+#Difference between the 'stop' and 'kill' of a container
+=> 'docker stop' will stop all the services inside the container. This is why we have a wait time when we execute 'docker stop'
+
+=> 'docker kill' will directly terminate the container. It will not wait till the containers are stopped. It will kill immediately.
+
+
+
+# To pull or download  the image
+$ docker pull <ImageName>
+Ex: docker pull helloworld
+
+# To run the image
+$ docker run <ImageName>
+
+# To remove any image
+$ docker rmi <ImageName> or <ImageID>
+
+# To remove an image which is being used by the (stopped/running) container
+$ docker rmi -f <ImageName> or <ImageID>
+
+# To run the image without pulling
+$ docker run <ImageName>
+
+# To rename a container
+$ docker rename <CurrentName> <NewName>
+
+# To go inside a specific container
+$ docker exec -it <ContainerName> /bin/bash
+
+# If the container stops immediately after creating, run the container interactive mode;
+$ docker run -it <ContainerName> <Command>
+
+# To start a container
+$ docker start <ContainerName> or <ContainerID>
+
+# To see the contents available inside a container
+Step 1: Start and Access the Container
+$ docker start <ContainerName>
+$ docker exec -it <ContainerName> <Command>
+
+
+
+To copy the content from the container to image, we will use 'commit' command
+$ docker commit <ContainerName> <GiveCustomImageName>
+
+# To create a container from the custom image
+$ docker run -it --name <ContainerName> <ImageName>
+
+
+to push docker image to docker hub below steps 
+
+To create the docker image by using docker file ----> docker build -t <ImageName> .
+To run the docker image ----> docker run <ImageName>
+
+To push the docker image to the docker hub, we need to tag the image
+docker tag <ImageName> <DockerHubUserName>/<ImageName>
+
+To push the docker image
+docker push <DockerHubUuserName>/<ImageName>
+
+AGRS AND ENV
+
+docker build -t prasad5806/netflix:v6 --build-arg author="Kastro" --build-arg client="Netflix" .
+
+8. Run the image and do the port mapping
+docker run -d -p <HostPortNumber>:<ContainerPortNumber> <ImageName>
+
+
+Lets share the volume from container 1 to container 2
+
+docker run -it --name container03 --volumes-from container01 --privileged=true ubuntu
+
+
+
+detailed information
+
+docker inspect e5a423f173e7
+
+
+
+
+docker volume creation using CLI
+
+docker run --it --name hscontainer03 -v /volume2 ubuntu
+
+
+to create a volume 
+
+docker volume create <volumename>
+
+to list volumes
+
+docker volume ls
+
+docker volume inspect volume3  in mount path we have to insert the files
+
+touch java{1..5}
+
+and attach the volume to another container
+
+docker run -it --name container name  --mount source=volume3,destination=/volume3 ubuntu
+
+share the volume to another container 
+
+docker run -it --name container03 --volumes-from container01 --privileged=true ubuntu
+
+docker-compose file
+
+
+
+
+
+Spring boot docker file
+
+FROM OpenJDK:11
+COPY target/app.jar /user/app/app.jar
+WORKDIR /usr/app/
+EXPOSE 8080
+ENTRYPOINT["java","-jar","app.jar"]
+
+git clone https://github.com/KastroVKiran/Docker-SpringBoot-Project.git
+
+mvn clean package
+
+vi Dockerfile
+
+FROM openjdk:11
+MAINTAINER "Kastro Kiran V"
+COPY target/spring-boot-docker-app.jar  /usr/app/
+WORKDIR /usr/app/
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "spring-boot-docker-app.jar"]
+
+docker run -d -p 9090:8080 springboot
+
+open browser http://3.148.112.188:9090/ and enter
+
+Deploying Python with docker file
+
+https://github.com/KastroVKiran/Docker-Python-Project.git
+
+dockerfile
+
+FROM python:3.6
+MAINTAINER vk67220
+WORKDIR /app
+COPY . /app
+RUN ls -l /app
+RUN pip install --upgrade pip && pip install -r requirements.txt
+EXPOSE 5000
+ENTRYPOINT ["python", "app.py"]
+
+docker build -t <ImageName> .
+
+docker run -d -p 5000:5000 app_python
+
+now in ec2 security groups port enable for 5000
+
+on browser http://3.148.112.188:5000/
+
+Docker Volume Commands
+-------------------------------------
+1. docker volume --help ---> To see the commands related to the docker volume
+2. docker volume ls ---> To see the local docker volume
+3. docker volume <Volume-Name> ---> To create a docker volume
+4. docker volume inspect <Volume-Name> ---> To see the metadata of a volume
+5. docker volume rm <Volume-Name> ---> To remove the docker volume
+6. docker volume prune ---> To remove all the unused volumes
+
+Method 1: creation of docker volumes using Docker File
+
+FROM ubuntu
+VOLUME ["/volume1"]
+
+Share the volume1 from container1 to container2
+
+docker run -it --name container02 --volumes-from container01 --privileged=true ubuntu
+
+Method 2: Creation of docker volume using CLI
+
+docker run --it --name container03 -v /volume2 ubuntu
+
+Share the volume1 from container3 to container2
+
+docker run -it --name container04 --volumes-from container03 --privileged=true ubuntu
+
+Method 3: Using volume mounting concept we will see how to create a docker volume
+
+To create a volume ---> docker volume create <Volume-Name>
+To see the list of volumes ---> docker volume ls
+To get the metadata/information of a volume ---> docker volume inspect <Volume-Name>
+
+docker run -it --name container5 --mount source=volume01,destination=/volume02 ubuntu
+
+
+-------------------------------------
+Docker compose commands
+-------------------------------------
+Create containers using docker compose
+$ docker-compose up
+
+Create containers using different filename
+$ docker-compose -f <FileName> up
+
+Run docker containers in detached mode
+$ docker-compose up -d
+
+Display the containers created by docker compose
+$ docker-compose ps
+
+List of docker images created by docker compose
+$ docker-compose images
+
+To check the container logs
+$ docker logs -f <ContainerName>
+
+To remove all the docker containers created by docker compose
+$ docker-compose down
+
+Default docker-compose file name
+docker-compose.yml
+
+to delete all container at the same time
+docker kill $(docker ps -a -q)
