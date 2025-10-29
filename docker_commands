@@ -1,3 +1,39 @@
+docker -v
+docker version
+docker info
+docker images
+docker ps
+docker ps -a
+docker pull <imagename>
+
+docker run -it --name <containername><imagename> or docker run -it --name <containername><imageid>
+ex:- docker run -it --name ct1 -p 8080:80 nginx
+
+docker rm $(docker ps -a) -f
+docker rmi $(docker images) -f
+docker stop <containername>
+docker start <containername>
+docker kill <containername>
+docker attach <containername>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # To search for a specific image
 $ docker search <ImageName>
 Ex: docker search amazonlinux
