@@ -14,7 +14,11 @@ docker rmi $(docker images) -f
 docker stop <containername>
 docker start <containername>
 docker kill <containername>
-docker attach <containername>
+docker attach <containername>   ---- connect to the terminal 
+docker commit <containername> <imagename>:<tag> ----- used to copy the content from container to images 
+
+
+
 
 
 
