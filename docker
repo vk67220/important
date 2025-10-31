@@ -17,6 +17,11 @@ Docker image:
 
 docker image is a read only blue print used to  create docker containers.
 
+DockerFile:-
+
+dockerfile is step by step instruction for creating docker image automatically
+
+
 
 
 
