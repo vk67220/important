@@ -49,6 +49,15 @@ CMD yum install git -y
 CMD touch kastro.txt
 
 
+DockerFile1
+----------------------------------------------------------------------
+FROM ubuntu
+RUN apt update -y
+RUN apt install git -y 
+
+docker build -t image1 .
+docker run -it --name ct1 image1:latest
+
 
 
 
