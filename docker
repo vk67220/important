@@ -18,9 +18,35 @@ Docker image:
 docker image is a read only blue print used to  create docker containers.
 
 DockerFile:-
-
 dockerfile is step by step instruction for creating docker image automatically
 
+dockerfile componenets :-
+====================================================================
+From:
+it is used to setup base image for our container
+it indicates base image to run our application
+
+ex:-
+FROM ubuntu
+FROM tomcat
+
+Run:
+it is used to install any packages, or run commands.
+run will execute during image creation
+
+ex:-
+RUN touch kastro.txt
+RUN mkdir kastro
+
+
+CMD:
+cmd is is used to execute linux commands.
+cmd will get executed during container creations  
+
+Ex:-
+
+CMD yum install git -y
+CMD touch kastro.txt
 
 
 
