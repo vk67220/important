@@ -16,6 +16,13 @@ docker start <containername>
 docker kill <containername>
 docker attach <containername>   ---- connect to the terminal 
 docker commit <containername> <imagename>:<tag> ----- used to copy the content from container to images 
+docker restart <containerid>
+docker pause <containerid>
+docker unpause <containerid>
+docker inspect <containerid>
+docker rename <oldcontainername> <newcontainername>
+docker system prune -a 
+
 
 
 
