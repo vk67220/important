@@ -58,7 +58,9 @@ DockerFile1
 ----------------------------------------------------------------------
 FROM ubuntu
 RUN apt update -y
-RUN apt install git -y 
+RUN apt install git -y
+COPY kastro.py
+ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.111/bin/apache-tomcat-9.0.111.tar.gz /tmp
 CMD ["bash", "-c", "touch kastro.txt && exec bash"]
 
 docker build -t image1 .
