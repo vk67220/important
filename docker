@@ -63,6 +63,13 @@ Note:-whatever instructions that are defined after WORKDIR command,all those ins
 LABEL:-
 it is used to provide the tags such as authorname,author mail etc
 
+ENV:-
+it is used to declare variables which runs insdie the container
+
+EXPOSE:-
+it is used to provide port number to container
+it is used to expose the container outside the world
+
 
 
 DockerFile1
@@ -74,6 +81,7 @@ COPY kastro.py
 ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.111/bin/apache-tomcat-9.0.111.tar.gz /tmp
 WORKDIR /tmp
 LABEL author Kastro
+ENV trainername Kastro
 CMD ["bash", "-c", "touch kastro.txt && exec bash"]
 
 docker build -t image1 .
