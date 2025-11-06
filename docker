@@ -49,9 +49,20 @@ CMD yum install git -y
 CMD touch kastro.txt
 
 
-COPY:- it used to copy the files from one location to another location
+COPY:- 
+it used to copy the files from one location to another location
 
-ADD:- it used to copy internet files from one location to another location
+ADD:- 
+it used to copy internet files from one location to another location
+
+WORKDIR:- 
+working directory for image or container
+it is used to go inside desired directory
+Note:-whatever instructions that are defined after WORKDIR command,all those instruction will be executed insdie the WORKDIR path     
+
+LABEL:-
+it is used to provide the tags such as authorname,author mail etc
+
 
 
 DockerFile1
@@ -61,6 +72,8 @@ RUN apt update -y
 RUN apt install git -y
 COPY kastro.py
 ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.111/bin/apache-tomcat-9.0.111.tar.gz /tmp
+WORKDIR /tmp
+LABEL author Kastro
 CMD ["bash", "-c", "touch kastro.txt && exec bash"]
 
 docker build -t image1 .
