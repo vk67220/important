@@ -82,6 +82,7 @@ ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.111/bin/apache-tomcat-9.0.111.
 WORKDIR /tmp
 LABEL author Kastro
 ENV trainername Kastro
+EXPOSE 80
 CMD ["bash", "-c", "touch kastro.txt && exec bash"]
 
 docker build -t image1 .
