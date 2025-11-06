@@ -49,6 +49,11 @@ CMD yum install git -y
 CMD touch kastro.txt
 
 
+COPY:- it used to copy the files from one location to another location
+
+ADD:- it used to copy internet files from one location to another location
+
+
 DockerFile1
 ----------------------------------------------------------------------
 FROM ubuntu
