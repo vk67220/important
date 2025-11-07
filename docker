@@ -72,6 +72,31 @@ it is used to expose the container outside the world
 
 
 
+PORT MAPPING:-
+
+docker run -itd --name <containername> -p <hostportnumber>:<containerportnumber> <image>:<version.no>
+
+hostport - 
+it is port of docker host machine.
+we can access the app running inside the container.
+host port should be opened in the SG of VM, only then we can access the application on browser
+
+Containerport-
+it is port of inside container where application is running
+in dockerfile expose port number is consider as containerport 
+
+USER
+
+we can set an username for an image or container
+USER<username>
+
+AUTHOR
+
+we can define who is the author of dockerfile
+AUTHOR<AuthorName>
+
+
+
 DockerFile1
 ----------------------------------------------------------------------
 FROM ubuntu
@@ -93,6 +118,7 @@ docker run -it --name ct1 image1:latest
 docker exec :-if we exit container won't get stop
 
 docker attach :-if we exit container will get stopped
+
 
 
 
