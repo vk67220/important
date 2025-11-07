@@ -95,6 +95,18 @@ AUTHOR
 we can define who is the author of dockerfile
 AUTHOR<AuthorName>
 
+ARGS:-
+
+these are the variables that run outside the container
+
+Entrypoint:-
+
+these instruction can be executed while creating the container
+these instruction cannot overwritten,but CMD can be overwritten
+
+MAINTAINER:-
+
+it can represents author/maintainer of the dockerfile
 
 
 DockerFile1
