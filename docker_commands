@@ -23,6 +23,36 @@ docker inspect <containerid>
 docker rename <oldcontainername> <newcontainername>
 docker system prune -a 
 
+docker volume ls     ----list of volumes
+docker run -d --name ct2 --volumes-from ct1 -p 8081:80 image:v2   ----Sharing the existing volume to a new container or Sharing the volume b/w containers
+
+
+Create Volumes Imperatively
+
+1)Creata volume 
+
+docker volume create mydata ------->used to create volumes
+
+2)Run a container and mount the volume
+
+docker run -d --name ct3 -v mydata:/data -p 8082:80 image:v2
+
+
+
+Method to create a volume on the host machine and then attach it to a Docker container
+
+1)Create a directory on the host machine
+
+mkdir -p /opt/mydata
+
+2)Run container and bind-mount this directory
+
+docker run -d --name ct4 -v /opt/mydata:/data -p 8084:80 image:v2
+
+
+
+
+
 
 
 
