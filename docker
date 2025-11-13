@@ -108,6 +108,17 @@ MAINTAINER:-
 
 it can represents author/maintainer of the dockerfile
 
+Docker Volumes:-
+
+it is used to store the data permanently.
+we use docker volumes to store the data of a docker container
+docker volumes is also know as persistent volumes
+a volume can be shared between multiple containers
+we can create more than 1 volume in single container
+volume are created oustide of the container filesystem,they are not deleted when container is stop/deleted 
+
+
+
 
 DockerFile1
 ----------------------------------------------------------------------
@@ -117,6 +128,7 @@ RUN apt install git -y
 COPY kastro.py
 ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.111/bin/apache-tomcat-9.0.111.tar.gz /tmp
 WORKDIR /tmp
+VOLUME ["volume1"]
 LABEL author Kastro
 ENV trainername Kastro
 EXPOSE 80
