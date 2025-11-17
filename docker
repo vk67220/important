@@ -108,6 +108,11 @@ MAINTAINER:-
 
 it can represents author/maintainer of the dockerfile
 
+
+docker exec :-if we exit container won't get stop
+
+docker attach :-if we exit container will get stopped
+
 Docker Volumes:-
 
 it is used to store the data permanently.
@@ -148,9 +153,33 @@ docker run -it --name ct1 image1:latest
 
 
 
-docker exec :-if we exit container won't get stop
+Docker Compose :-
 
-docker attach :-if we exit container will get stopped
+
+3 layers 
+
+version
+services
+volumes/network 
+
+inside each service
+
+image
+ports
+environment
+deploy:resources(limits)
+volumes
+
+| Layer        | image | ports  | environment  | deploy (CPU/RAM) | volumes |
+| ------------ | ----- | -----  | -----------  |----------------  | ------- |
+| **Frontend** | ✔     | ✔     | ❌           | ✔               | ❌      |
+| **Backend**  | ✔     | ✔     | ✔            | ✔               | ❌      |
+| **Database** | ✔     | ❌    | ✔            | ✔               | ✔       |
+
+
+
+
+
 
 
 
