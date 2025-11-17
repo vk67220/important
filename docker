@@ -122,10 +122,11 @@ Docker Network:-
 Docker network is used to make communication between multiple containers that are running on same host or different hosts 
 
 Types of Docker networks:
-1)Bridge network
-2)Overlay network
-3)Host network
-4)None network
+1)Bridge network  -- if 2 containers wants to communication with each other,if they are on same host
+2)Overlay network --- if 2 containers want to communication to each other,if they are on different host
+3)Host network --- if you want to use host network of ec2 instance,then we will use HOST
+4)None network --- if you don't want to expose any application running in the container
+
 
 
 DockerFile1
