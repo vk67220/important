@@ -50,7 +50,9 @@ mkdir -p /opt/mydata
 docker run -d --name ct4 -v /opt/mydata:/data -p 8084:80 image:v2
 
 
-
+For the existing container, configure the CPU and Memory limits
+==============================================================================================
+docker run -d --name ct5 --cpus="1.0" --memory="512m" -v /mnt/mydata:/data -p 8086:80 image:v2
 
 
 
