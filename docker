@@ -117,7 +117,15 @@ a volume can be shared between multiple containers
 we can create more than 1 volume in single container
 volume are created oustide of the container filesystem,they are not deleted when container is stop/deleted 
 
+Docker Network:-
 
+Docker network is used to make communication between multiple containers that are running on same host or different hosts 
+
+Types of Docker networks:
+1)Bridge network
+2)Overlay network
+3)Host network
+4)None network
 
 
 DockerFile1
