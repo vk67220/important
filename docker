@@ -136,20 +136,24 @@ Types of Docker networks:
 
 DockerFile1
 ----------------------------------------------------------------------
-FROM ubuntu
-RUN apt update -y
-RUN apt install git -y
-COPY kastro.py
-ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.111/bin/apache-tomcat-9.0.111.tar.gz /tmp
-WORKDIR /tmp
-VOLUME ["volume1"]
-LABEL author Kastro
-ENV trainername Kastro
-EXPOSE 80
-CMD ["bash", "-c", "touch kastro.txt && exec bash"]
+FROM pyhton :3.10
+WORKDIR /app
+COPY requirement.txt .
+RUN pip install -r requirement.txt
+COPY . .
+CMD ["python", "app.py]
+
+
+FROM openjdk:17
+WORKDIR /app
+COPY target/myapp.jar app.jar
+CMD ["java", "-jar", "myapp.jar"]
 
 docker build -t image1 .
 docker run -it --name ct1 image1:latest
+docker login
+docker tag image1 prasad5806/image1:v1
+docker push prasad5806/image1:v1
 
 
 
