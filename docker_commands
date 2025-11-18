@@ -98,6 +98,14 @@ $ docker-compose down
 
 
 
+How to push to image to dockerhub
+
+docker login
+docker tag myapp prasad5806/myapp:v2
+docker push prasad5806/myapp:v2
+
+
+
 
 
 
