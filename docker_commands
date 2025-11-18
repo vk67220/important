@@ -22,6 +22,7 @@ docker unpause <containerid>
 docker inspect <containerid>
 docker rename <oldcontainername> <newcontainername>
 docker system prune -a 
+docker log <containername>
 
 docker volume ls     ----list of volumes
 docker run -d --name ct2 --volumes-from ct1 -p 8081:80 image:v2   ----Sharing the existing volume to a new container or Sharing the volume b/w containers
