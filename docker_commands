@@ -56,6 +56,28 @@ docker run -d --name ct5 --cpus="1.0" --memory="512m" -v /mnt/mydata:/data -p 80
 
 
 
+docker network:-
+
+docker network create mynet
+
+docker network create --driver overlay mynet
+
+docker network ls
+
+docker network inspect mynet
+
+docker network connect mynet backend or frontend or db
+
+docker network disconnect mynet backend or frontend or db
+
+docker network rm mynet
+
+docker network prune
+
+
+
+
+
 
 
 
