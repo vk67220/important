@@ -75,8 +75,26 @@ docker network rm mynet
 docker network prune
 
 
+-------------------------------------
+Docker compose commands
+-------------------------------------
+Create containers using docker compose
+$ docker-compose up
 
+Create containers using different filename
+$ docker-compose -f <FileName> up
 
+Run docker containers in detached mode
+$ docker-compose up -d
+
+Display the containers created by docker compose
+$ docker-compose ps
+
+List of docker images created by docker compose
+$ docker-compose images
+
+To remove all the docker containers created by docker compose
+$ docker-compose down
 
 
 
