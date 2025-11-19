@@ -1,0 +1,42 @@
+DockerFile
+
+FROM
+WORKDIR
+COPY ---------COPY DEPENDENCIES
+RUN
+COPY --------- COPY FULL PROJECT CODE
+EXPOSE
+CMD
+
+
+Docker compose file
+
+version:
+
+services:
+  db:
+    image:
+    container_name:
+    environment:
+    volumes:
+    networks:
+    ports:
+
+  backend:
+    build:
+    container_name:
+    depends_on:
+    environment:
+    networks:
+    volumes:
+    ports:
+
+  frontend:
+    build:
+    container_name:
+    depends_on:
+    networks:
+    ports:
+
+networks:
+volumes:
