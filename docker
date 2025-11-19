@@ -176,11 +176,7 @@ environment
 deploy:resources(limits)
 volumes
 
-| Layer        | image | ports  | environment  | deploy (CPU/RAM) | volumes |
-| ------------ | ----- | -----  | -----------  |----------------  | ------- |
-| **Frontend** | ✔     | ✔     | ❌           | ✔               | ❌      |
-| **Backend**  | ✔     | ✔     | ✔            | ✔               | ❌      |
-| **Database** | ✔     | ❌    | ✔            | ✔               | ✔       |
+
 
 
 
