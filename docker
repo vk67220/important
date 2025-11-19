@@ -178,6 +178,13 @@ volumes
 
 
 
+MultiStage DockerFile: to reduce image size
+
+Firstimage:build app
+secondimage:run app
+
+minimal image
+eclipse-temurin-jre, python-slim, node:18-alpine,nginx-alpine
 
 
 
