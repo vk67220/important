@@ -82,6 +82,8 @@ Docker compose commands
 Create containers using docker compose
 $ docker-compose up
 $ docker compose up --build -d
+$ docker compose build
+
 
 Create containers using different filename
 $ docker-compose -f <FileName> up
