@@ -384,3 +384,57 @@ docker-compose.yml
 
 to delete all container at the same time
 docker kill $(docker ps -a -q)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+======================================================ECR==================================================================
+
+Configure AWS CLI
+aws configure
+
+
+Enter:
+
+AWS Access Key ID: <your_key>
+AWS Secret Access Key: <your_secret>
+Region: us-east-1
+Output: json
+
+Login to AWS ECR
+aws ecr get-login-password --region us-east-1 \
+| docker login --username AWS --password-stdin 597918493080.dkr.ecr.us-east-1.amazonaws.com
+
+Tag it for ECR:
+docker tag app:v1 597918493080.dkr.ecr.us-east-1.amazonaws.com/my-container-app:v1
+
+Push image to ECR
+docker push 597918493080.dkr.ecr.us-east-1.amazonaws.com/my-container-app:v1
+
+(On EC2) Login to ECR before pulling
+
+aws ecr get-login-password --region us-east-1 \
+| docker login --username AWS --password-stdin 597918493080.dkr.ecr.us-east-1.amazonaws.com
+
+Pull the image from ECR
+docker pull 597918493080.dkr.ecr.us-east-1.amazonaws.com/my-container-app:v1
+
+Run the container on EC2
+Map port 8080 → 5000:
+docker run -d --name ct2 -p 8080:5000 597918493080.dkr.ecr.us-east-1.amazonaws.com/my-container-app:v1
