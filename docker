@@ -187,6 +187,7 @@ minimal image
 eclipse-temurin-jre, python-slim, node:18-alpine,nginx-alpine
 
 
+Amazon ECS (Elastic Container Service) is used for running Docker containers on AWS without managing complex infrastructure.
 
 
 
