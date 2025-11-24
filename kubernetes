@@ -1,1 +1,35 @@
+Kubernetes:(k8s)
+
+it is an open source container orchestration that automates
+
+deployment
+scaling
+load balancing
+manage containerized applications
+
+
+Cluster:-
+
+group of servers that work together to run an containerized application
+
+MasterNode: managing scheduling,scaling,monitoring
+WorkerNode: each nodes run containers inside the POD
+
+
+
+Kubernetes cluster (k8s) can be set into 
+1)self managed kubernetes cluster
+2)managed kubernetes cluster
+
+How can we create a cluster 
+1)CLI
+2)aws console
+3)Terraform
+
+Creation of Pods (or) resources
+1)Declarative - manifest yaml files 
+2)Imperative -  command execution
+
+
+
 
