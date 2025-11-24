@@ -186,6 +186,12 @@ secondimage:run app
 minimal image
 eclipse-temurin-jre, python-slim, node:18-alpine,nginx-alpine
 
+Docker Swarm:-
+
+Docker Swarm is container orchestration tool
+it allows you to run and manage multiple containers across multiple servers by grouping them into clusters 
+Docker Swarm doesnot support Auto Scaling - To overcome this we will KUBERNETES
+
 
 Amazon ECS (Elastic Container Service) is used for running Docker containers on AWS without managing complex infrastructure.
 
