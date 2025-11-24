@@ -32,4 +32,13 @@ Creation of Pods (or) resources
 
 
 
+Kubernetes architecture
+====================================================================================================
+important component is master node/control plane
+
+1)API Server
+2)Scheduller
+3)Controller manager
+4)etcd
+
 
