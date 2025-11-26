@@ -16,6 +16,10 @@ MasterNode: managing scheduling,scaling,monitoring
 WorkerNode: each nodes run containers inside the POD
 
 
+Deploy the App
+the deployment task is given to master node
+master node will assign the task to worker nodes 
+the master node will manages the worker nodes is called cluster
 
 Kubernetes cluster (k8s) can be set into 
 1)self managed kubernetes cluster
@@ -25,12 +29,6 @@ How can we create a cluster
 1)CLI
 2)aws console
 3)Terraform
-
-Creation of Pods (or) resources
-1)Declarative - manifest yaml files 
-2)Imperative -  command execution
-
-
 
 Kubernetes architecture
 ====================================================================================================
@@ -50,3 +48,6 @@ Worker node
 kubelet   
 kube-proxy
 
+Creation of Pods (or) resources
+1)Declarative - manifest yaml files 
+2)Imperative -  command execution
