@@ -45,8 +45,8 @@ using 'kubectl' we can communicate with the Control Plane
 
 Worker node
 
-kubelet   
-kube-proxy
+kubelet   --- worker node agent
+kube-proxy  - provide the network for communicate with control plane and worker nodes
 
 Creation of Pods (or) resources
 1)Declarative - manifest yaml files 
