@@ -36,9 +36,17 @@ Kubernetes architecture
 ====================================================================================================
 important component is master node/control plane
 
-1)API Server
-2)Scheduller
-3)Controller manager
-4)etcd
+Master node
 
+1)API Server ---Receives all requests
+2)Scheduller --- Component that decides where a Pod should run
+3)Controller manager - componenet that maintain desired state
+4)etcd -- kubernetes database
+
+using 'kubectl' we can communicate with the Control Plane
+
+Worker node
+
+kubelet   
+kube-proxy
 
