@@ -1,0 +1,17 @@
+Pods:-
+
+---
+apiVersion: v1
+kind: Pod                     #it represents creating pods
+metadata:                     # information about the pod
+  name: vk67220-firstapp
+  labels:                     # label is an id for the pod
+    app: javawebcontainerapp
+spec:                         # container information
+  containers:
+    - name: javawebcontainer
+      image: kastrov/bms
+      ports:
+        - containerPort: 8080
+---
+ 
