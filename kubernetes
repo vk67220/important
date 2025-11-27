@@ -48,6 +48,23 @@ Worker node
 kubelet   --- worker node agent
 kube-proxy  - provide the network for communicate with control plane and worker nodes
 
+=====================================================================================================
+Kubernetes topics 
+=====================================================================================================
+
+1)Pods:-
+
+in every k8s,containers will be created inside the pods
+pods always runs inside the worker nodes
+multiple pods will be created in a single node
+every pod will have unique ip address
+when ever a pod dies,a new ip address is created
+
 Creation of Pods (or) resources
 1)Declarative - manifest yaml files 
 2)Imperative -  command execution
+
+
+
+
+
