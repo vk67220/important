@@ -67,6 +67,29 @@ Creation of Pods (or) resources
 2)Imperative -  command execution
 
 
+Pod life cycle:-
 
+pending
+running
+failed
+unknown (communication is lost)
 
+Types of pods:-
+
+single container pod 
+multi container pod  
+init container pod
+
+=============================================================================================================================
+Kubernetes Service:-
+=============================================================================================================================
+
+concept used to expose the pods outside of the cluster 
+
+Types of services 
+1)ClusterIP
+2)NodePort
+3)Load Balancer
+4)Ingress controller
+5)Headless service
 
