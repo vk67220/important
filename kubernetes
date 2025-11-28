@@ -16,6 +16,8 @@ MasterNode: managing scheduling,scaling,monitoring
 WorkerNode: each nodes run containers inside the POD
 
 
+To see the cluster data----all the cluster info will be available under .kube directory.inside the .kube directory will have config file.
+
 Deploy the App
 the deployment task is given to master node
 master node will assign the task to worker nodes 
