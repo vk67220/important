@@ -93,6 +93,15 @@ Types of services
 4)Ingress controller
 5)Headless service
 
+ClusterIP:- 
+You can access the application with in the cluster only
+
+NodePort:-
+
+nodeport is a service that expose the application to be accessible outside of the cluster
+nodeport range is between 30000-32767
+if you don't provide nodeport in the service mainfest file then k8s will allocate the port number
+
 LoadBalancer:-
 load balancer will disrtibute the traffic equally to all the worker nodes in the cluster 
 
