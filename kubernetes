@@ -95,6 +95,7 @@ Types of services
 
 ClusterIP:- 
 You can access the application with in the cluster only
+in clusterIP service all the pods are mapped to single ip address ,i.e static ip
 
 NodePort:-
 
