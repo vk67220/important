@@ -30,3 +30,18 @@ spec:
     - port: 80
       targetPort: 8080
 ---
+
+
+Traffic flow
+
+Internet
+     |
+NodeIP:NodePort(32000)
+     |
+ServicePort(80)
+     |
+TargetPort(3000)
+     |
+containerPort(3000)
+     |
+Application
