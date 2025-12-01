@@ -89,7 +89,10 @@ concept used to expose the pods outside of the cluster
 Types of services 
 1)ClusterIP
 2)NodePort
-3)Load Balancer
+3)Load Balancer       
 4)Ingress controller
 5)Headless service
+
+LoadBalancer:-
+load balancer will disrtibute the traffic equally to all the worker nodes in the cluster 
 
