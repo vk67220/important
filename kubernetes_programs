@@ -176,3 +176,38 @@ spec:
       targetPort: 3000
       nodePort: 30777   # optional
 ---
+
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: springboot-ns
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: springboot-app-pod
+  namespace: springboot-ns
+  labels:
+    app: springboot-app
+spec:
+  containers:
+    - name: springboot-container
+      image: <your-springboot-image>:latest
+      ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springboot-app-svc
+  namespace: springboot-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: springboot-app
+  ports:
+    - port: 80
+      targetPort: 8080
+      # nodePort: 30080   # optional
+---
