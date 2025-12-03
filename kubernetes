@@ -104,5 +104,19 @@ nodeport range is between 30000-32767
 if you don't provide nodeport in the service mainfest file then k8s will allocate the port number
 
 LoadBalancer:-
-load balancer will disrtibute the traffic equally to all the worker nodes in the cluster 
+load balancer will disrtibute the traffic equally to all the worker nodes in the cluster
+
+Namespaces:-
+
+Namespace is used to group k8s componenets logically
+we can create multiple namespaces in k8s cluster
+Namespaces are isolated
+when we create a pod under a namespace,when we delete that namespace,all the pods inside that namspace will also get deleted
+
+when ever we create pods or services,all of them are created under default namespaces
+
+
+
+
+
 
