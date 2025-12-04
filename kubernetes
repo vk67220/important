@@ -116,7 +116,7 @@ when we create a pod under a namespace,when we delete that namespace,all the pod
 when ever we create pods or services,all of them are created under default namespaces
 
 
-Always we need to create pod using these below k8s componenets
+Always we need to create pod using these below k8s componenets(High Availability)
 1)ReplicationController
 2)Replica Set
 3)Deployment
@@ -127,5 +127,9 @@ ReplicationController:-
 
 specified no of identical pods are always running
 i.e if a pod gets crashed or deleted,replicationcontroller will create new one
+using replication controller we can scale up and scale down the number of pods
+
+
+
 
 
