@@ -261,3 +261,50 @@ spec:
     targetPort: 3000
     nodePort: 31000
 ---
+
+
+============================================================================================================================
+ReplicaSet
+============================================================================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: bmswebapprs
+  namespace: vk67220-ns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bmswebapp
+  template:
+    metadata:
+      labels:
+        app: bmswebapp
+    spec:
+      containers:
+        - name: bmswebappcontainer
+          image: prasad5806/bms:latest
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bmswebappsvc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: bmswebapp
+  ports:
+    - port: 80
+      targetPort: 3000
+      nodePort: 31000
+---
