@@ -129,7 +129,7 @@ specified no of identical pods are always running
 i.e if a pod gets crashed or deleted,replicationcontroller will create new one
 using replication controller we can scale up and scale down the number of pods
 
-
+Note: if we delete replication controller all the pods also get deleted 
 
 
 
