@@ -7,8 +7,10 @@ To see details of pod ----> kubectl get pods -o wide
 To see service list ---> kubectl get svc
 To create svc ----> kubectl apply -f <service_filename.yml>
 To delete all the resource  ----> kubectl delete all --all
+To delete pod ----> kubectl delete pod <PodName>
 To get Namespace list ---> kubectl get namespace
 To see a pods that are running under which namespace ----> kubectl get pods -n <NameSpaceName>
 Create custom namespace in k8s cluster ---> kubectl create ns <NameSpaceName>
 To delete Namespace -----> kubectl delete ns <NameSpaceName>
+
 
