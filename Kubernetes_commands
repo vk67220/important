@@ -12,5 +12,6 @@ To get Namespace list ---> kubectl get namespace
 To see a pods that are running under which namespace ----> kubectl get pods -n <NameSpaceName>
 Create custom namespace in k8s cluster ---> kubectl create ns <NameSpaceName>
 To delete Namespace -----> kubectl delete ns <NameSpaceName>
+To get ReplicationController details ----> kubectl get rc
 
 
