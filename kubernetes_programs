@@ -225,15 +225,13 @@ ReplicationController
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: bms-namespace
+  name: vk67220-ns
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: bmswebpprc
-  namespace: bms-namespace
-  labels:
-    app: bmswebapp
+  name: vk67220-rc
+  namespace: vk67220-ns
 spec:
   replicas: 3
   selector:
@@ -252,8 +250,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: bmswebsvc
-  namespace: bms-namespace
+  name: bmswebappsvc
+  namespace: vk67220-ns
 spec:
   type: LoadBalancer
   selector:
