@@ -125,11 +125,22 @@ Always we need to create pod using these below k8s componenets(High Availability
 
 ReplicationController:-
 
-specified no of identical pods are always running
+Maintain desired number of pods
 i.e if a pod gets crashed or deleted,replicationcontroller will create new one
 using replication controller we can scale up and scale down the number of pods
 
 Note: if we delete replication controller all the pods also get deleted 
 
+ReplicaSet:-
 
+Maintain desired number of pods
+scaling the pods
+the only difference between ReplicationController and ReplicaSet is in'selector'
+
+Selector is used to identify the pods using pod label
+ReplicationController supports equality based selector
+ReplicaSet supports set based selector
+
+RC-Only one pod label
+RS-Multiple pod labels
 
