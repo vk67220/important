@@ -144,4 +144,29 @@ ReplicaSet supports set based selector
 RC-Only one pod label
 RS-Multiple pod labels
 
+Deployment:-
+
+Maintain desired number of pods
+Automatic rollout of new version
+Automatic rollback to old version
+AutoScaling(increase/decrease Pods)
+
+Types of Deployment
+1)Recreate
+2)Rolling Update
+3)Blue-Green deployment
+4)Canary Deployment
+
+Recreate:-delete all pods-create new pods-downtime
+
+Delete all old pods first
+then create all new pods
+Downtime
+
+RollingUpdate-Replace slowly-no downtime
+
+Gradually creates new version pods 
+Gradually terminates old version pods
+Zero downtime
+
 
