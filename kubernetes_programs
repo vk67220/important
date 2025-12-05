@@ -308,3 +308,136 @@ spec:
       targetPort: 3000
       nodePort: 31000
 ---
+
+
+============================================================================================================================
+Deployment
+============================================================================================================================
+
+RollingUpdate:-
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bmswebapp
+  namespace: vk67220-ns
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: bmswebapp
+  template:
+    metadata:
+      labels:
+        app: bmswebapp
+    spec:
+      containers:
+        - name: bmswebappcontainer
+          image: prasad5806/bms:latest
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bmswebappsvc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: bmswebapp
+  ports:
+    - port: 80
+      targetPort: 3000
+---
+
+
+
+ReCreate:-
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bmswebapp
+  namespace: vk67220-ns
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: bmswebapp
+  template:
+    metadata:
+      labels:
+        app: bmswebapp
+    spec:
+      containers:
+        - name: bmswebappcontainer
+          image: prasad5806/bms:latest
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bmswebappsvc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: bmswebapp
+  ports:
+    - port: 80
+      targetPort: 3000
+---
+
+Steps to do :-
+
+Step 1 — Build & Push New Version of Your Application
+docker pull prasad5806/bms:latest
+docker tag prasad5806/bms:latest prasad5806/bms:v2
+docker push prasad5806/bms:v2
+
+
+Step 2 — Update Deployment to New Version
+kubectl set image deployment/bmswebapp \
+bmswebappcontainer=prasad5806/bms:v2 \
+-n vk67220-ns
+
+
+Step 3 — Watch Recreate Strategy Behavior
+kubectl get pods -n vk67220-ns -w
+
+
+Step 4 — Check Rollout Status
+kubectl rollout status deployment/bmswebapp -n vk67220-ns
+
+
+Step 5 — Verify Image Version Running
+kubectl describe pod <pod-name> -n vk67220-ns | grep Image
+
+
+Step 6 — If Something Goes Wrong → ROLLBACK (UNDO)
+kubectl rollout undo deployment/bmswebapp -n vk67220-ns
+
+Step 7 — Verify You Returned to Older Version
+kubectl describe pod <new-pod-name> -n vk67220-ns | grep Image
+
