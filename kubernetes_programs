@@ -441,3 +441,80 @@ kubectl rollout undo deployment/bmswebapp -n vk67220-ns
 Step 7 — Verify You Returned to Older Version
 kubectl describe pod <new-pod-name> -n vk67220-ns | grep Image
 
+
+ReCreate:-
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotifywebapp
+  namespace: vk67220-ns
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spotifywebapp
+  template:
+    metadata:
+      labels:
+        app: spotifywebapp
+    spec:
+      containers:
+        - name: spotifywebappcontainer
+          image: prasad5806/spotify-app:latest
+          ports:
+            - containerPort: 5555
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotifywebappsvc 
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: spotifywebapp
+  ports:
+    - port: 80
+      targetPort: 5555
+---
+
+
+Steps to do :-
+
+Verify image version running
+kubectl describe pod spotifywebapp -n vk67220-ns | grep Image
+
+Step 1 — Build & Push New Version of Your Application
+docker pull prasad5806/spotify-app:latest
+docker tag prasad5806/spotify-app:latest prasad5806/spotify-app:v1
+docker push prasad5806/spotify-app:v1
+
+Step 2 — Update Deployment to New Version
+kubectl set image deployment/spotifywebappds spotifywebappcontainer=prasad5806/spotify-app:v1 -n vk67220-ns
+
+
+Step 3 — Watch Recreate Strategy Behavior
+kubectl get pods -n vk67220-ns -w
+
+
+Step 4 — Check Rollout Status
+kubectl rollout status deployment/spotifywebappds -n vk67220-ns
+
+
+Step 5 — Verify Image Version Running
+kubectl describe pod spotifywebapp -n vk67220-ns | grep Image
+
+Step 6 — If Something Goes Wrong → ROLLBACK (UNDO)
+kubectl rollout undo deployment/spotifywebappds -n vk67220-ns
+
+Step 7 — Verify You Returned to Older Version
+kubectl describe pod spotifywebapp -n vk67220-ns | grep Image
