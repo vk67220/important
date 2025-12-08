@@ -679,3 +679,282 @@ kubectl rollout undo deployment/zomatowebappds -n vk67220-ns
 kubectl describe pod zomatowebapp -n vk67220-ns | grep Image
 
 ============================================================================================================================
+
+
+
+============================================================================================================================
+Blue-Green Deployment:-
+============================================================================================================================
+
+STEP-1: Deploy BLUE (Current Production)
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zomatowebappds
+  namespace: vk67220-ns
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: zomatowebapp
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: zomatowebapp
+        version: blue
+    spec:
+      containers:
+        - name: zomatowebappcontainer
+          image: prasad5806/zomato:latest
+          ports:
+            - containerPort: 3000
+
+STEP-2: Create Service (points to BLUE)
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: zomatowebappsvc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: zomatowebapp
+    version: blue
+  ports:
+  - port: 80
+    targetPort: 3000
+
+Apply BLUE
+
+kubectl apply -f zomato-blue.yaml
+
+Verify BLUE
+
+kubectl get pods -n vk67220-ns -l version=blue
+kubectl describe pod -l version=blue -n vk67220-ns | grep Image
+
+
+STEP-3: Prepare GREEN (New Release)
+
+Build & push v2 image
+
+docker build -t zomato:v2 .
+docker tag zomato:v2 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2
+docker push 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2
+
+
+STEP-4: Deploy GREEN (WITH NO TRAFFIC)
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zomato-green-ds
+  namespace: vk67220-ns
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: zomatowebapp
+      version: green
+  template:
+    metadata:
+      labels:
+        app: zomatowebapp
+        version: green
+    spec:
+      containers:
+        - name: zomatowebappcontainer
+          image: prasad5806/zomato:latest
+          ports:
+            - containerPort: 3000
+---
+
+Apply
+
+kubectl apply -f zomato-green.yaml
+
+Verify Green
+
+kubectl get pods -n vk67220-ns -l version=green
+kubectl describe pod -l version=green -n vk67220-ns | grep Image
+
+STEP-5: TEST GREEN SAFELY
+
+kubectl exec -it <green-pod> -n vk67220-ns -- curl localhost:3000
+
+STEP-6: TRAFFIC SWITCH (THE CRITICAL STEP)
+
+kubectl patch service zomatowebappsvc \
+-n vk67220-ns \
+-p '{"spec":{"selector":{"app":"zomatowebapp","version":"green"}}}'
+
+STEP-7: VERIFY LIVE VERSION
+
+kubectl get endpoints zomatowebappsvc -n vk67220-ns
+kubectl describe pod -l version=green -n vk67220-ns | grep Image
+
+STEP-8: ROLLBACK (IF ISSUE FOUND)
+
+kubectl patch service zomatowebappsvc \
+-n vk67220-ns \
+-p '{"spec":{"selector":{"app":"zomatowebapp","version":"blue"}}}'
+
+STEP-9: CLEANUP OLD VERSION (OPTIONAL)
+kubectl delete deployment zomato-blue -n vk67220-ns
+
+=============================================================================================================================
+
+=============================================================================================================================
+Canary Deployment:-
+=============================================================================================================================
+
+DEPLOY STABLE VERSION (PRODUCTION)
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zomato-stable
+  namespace: vk67220-ns
+spec:
+  replicas: 9
+  selector:
+    matchLabels:
+      app: zomatowebapp
+      release: stable
+  template:
+    metadata:
+      labels:
+        app: zomatowebapp
+        release: stable
+    spec:
+      containers:
+        - name: zomatowebappcontainer
+          image: prasad5806/zomato:latest
+          ports:
+            - containerPort: 3000
+---
+
+Apply
+
+kubectl apply -f zomato-stable.yaml
+
+Verify:
+
+kubectl get pods -n vk67220-ns
+kubectl describe pod -l release=stable -n vk67220-ns | grep Image
+
+STEP 3 — CREATE SERVICE (ENTRY POINT)
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zomatowebappsvc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: zomatowebapp   # ❗ NO release here
+  ports:
+    - port: 80
+      targetPort: 3000
+---
+
+Apply:-
+
+kubectl apply -f zomato-service.yaml
+
+Verify:-
+
+kubectl get svc -n vk67220-ns
+
+STEP 4 — BUILD & PUSH NEW VERSION (CANARY IMAGE)
+
+docker build -t zomato:v2 .
+docker tag zomato:v2 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2
+docker push 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2
+
+STEP 5 — DEPLOY CANARY (SMALL EXPOSURE)
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zomato-canary
+  namespace: vk67220-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zomatowebapp
+      release: canary
+  template:
+
+
+    metadata:
+      labels:
+        app: zomatowebapp
+        release: canary
+    spec:
+      containers:
+        - name: zomatowebappcontainer
+          image: prasad5806/zomato:latest
+          ports:
+            - containerPort: 3000
+---
+
+Apply:-
+
+kubectl apply -f zomato-canary.yaml
+
+
+Verify:-
+
+kubectl get pods -n vk67220-ns
+kubectl describe pod -l release=canary -n vk67220-ns | grep Image
+
+STEP 6 — MONITOR CANARY (MOST IMPORTANT)
+
+kubectl logs -l release=canary -n vk67220-ns
+kubectl describe pod -l release=canary -n vk67220-ns
+
+
+STEP 7 — DECISION POINT
+
+OPTION A — SUCCESS → PROMOTE CANARY
+
+kubectl scale deployment zomato-canary --replicas=10 -n vk67220-ns
+kubectl delete deployment zomato-stable -n vk67220-ns
+
+OPTION B — FAILURE → ROLLBACK
+
+kubectl delete deployment zomato-canary -n vk67220-ns
+
+============================================================================================================================
+
