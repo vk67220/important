@@ -173,3 +173,22 @@ maxUnavailable: 1   → at most 1 pod can be down
 maxSurge: 1         → at most 1 extra pod can be created
 
 Note:-In deployment manifest file, if we dont specify deployment strategy, by default K8S will consider as 'Rolling Update'
+
+=============================================================================================================================
+Blue-Green Deployment:-
+=============================================================================================================================
+
+Blue-Green deployment is a strategy where two identical environments run at the same time 
+blue- present version(zomato v1)
+green-new version (zomato v2)
+only one version recevies user traffic at any point
+traffic is switched via the Service selector
+
+============================================================================================================================
+Canary Deployment:-
+============================================================================================================================
+Deploy new version to a small percent of users first,monitor it,if everything is ok then slowly traffic to it
+older version = stable
+new version = canary
+Example:-traffic split 90 % stable,canary 10%
+
