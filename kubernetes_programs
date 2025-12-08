@@ -568,5 +568,114 @@ spec:
       targetPort: 5555
 ---
 
+============================================================================================================================
+From docker image we have to push to ECR 
+============================================================================================================================
+
+Step 1: Create an ECR repository
+
+aws ecr create-repository \
+  --repository-name zomato \
+  --region us-east-1
+
+Step 2: Login to ECR
+
+aws ecr get-login-password --region us-east-1 \
+| docker login \
+--username AWS \
+--password-stdin 597918493080.dkr.ecr.us-east-1.amazonaws.com
+
+Step 3: Pull image from Docker Hub
+
+docker pull prasad5806/zomato:latest
+
+Step 4: Tag Docker Hub image for ECR
+docker tag prasad5806/zomato:latest \
+597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v1
+
+Step 5: Push image to ECR
+docker push 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v1
+
+Step 5: Verify image in ECR
+aws ecr list-images \
+  --repository-name zomato \
+  --region us-east-1
+
+Step 6: (VERY IMPORTANT) Ensure EKS nodes can pull ECR images
+AmazonEC2ContainerRegistryReadOnly
+
+aws iam list-attached-role-policies \
+  --role-name <EKS-node-role-name>
+
+If missing, attach:
+aws iam attach-role-policy \
+--role-name <EKS-node-role-name> \
+--policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vk67220-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zomatowebappds
+  namespace: vk67220-ns
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zomatowebapp
+  template:
+    metadata:
+      labels:
+        app: zomatowebapp
+    spec:
+      containers:
+        - name: zomatowebappcontainer
+          image: 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v1
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zomatowebappsvc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: zomatowebapp
+  ports:
+    - port: 80
+      targetPort: 3000
+---
 
 
+
+
+kubectl describe pod zomatowebapp -n vk67220-ns | grep Image
+
+docker pull 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v1
+docker tag 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v1 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2
+docker push 597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2
+
+kubectl set image deployment/zomatowebappds \
+zomatowebappcontainer=597918493080.dkr.ecr.us-east-1.amazonaws.com/zomato:v2 \
+-n vk67220-ns
+
+kubectl get pods -n vk67220-ns -w
+
+kubectl rollout status deployment/zomatowebappds -n vk67220-ns
+
+kubectl describe pod zomatowebapp -n vk67220-ns | grep Image
+
+kubectl rollout undo deployment/zomatowebappds -n vk67220-ns
+
+kubectl describe pod zomatowebapp -n vk67220-ns | grep Image
+
+============================================================================================================================
