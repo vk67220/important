@@ -925,8 +925,6 @@ spec:
       app: zomatowebapp
       release: canary
   template:
-
-
     metadata:
       labels:
         app: zomatowebapp
