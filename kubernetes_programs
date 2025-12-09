@@ -797,6 +797,16 @@ STEP-5: TEST GREEN SAFELY
 
 kubectl exec -it <green-pod> -n vk67220-ns -- curl localhost:3000
 
+if the above command not work follow below option
+
+kubectl run curlpod \
+  -n vk67220-ns \
+  --image=curlimages/curl \
+  --rm -it \
+  --restart=Never \
+  -- curl http://localhost or podip:3000
+
+
 STEP-6: TRAFFIC SWITCH (THE CRITICAL STEP)
 
 kubectl patch service zomatowebappsvc \
