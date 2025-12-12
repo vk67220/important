@@ -203,3 +203,26 @@ ex:-Application configuration
 Secret is used to store sensitive data,encoded with base64
 
 Ex:-database credentials
+
+============================================================================================================================
+Kubernetes Volumes 
+============================================================================================================================
+Persistent Volume:-
+persistent volume is a used to store the data permanently
+
+Access Modes:-
+RWO ---  ReadWriteOnce --- One node Read/Write   ------ used for Database
+ROX ---  ReadOnlyMany  --- Many read only        
+RWM ---  ReadWriteMany --- Many read and write
+
+Note:- in production StorageClass creates PV automatically
+
+Persistent Volume Claim :-
+Storage request from pod
+
+persistentVolumeReClaimPolicy:-
+
+Retain:- keeps pv + data
+Delete:- Delete pv + disk
+
+
