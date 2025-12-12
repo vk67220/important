@@ -966,3 +966,153 @@ kubectl delete deployment zomato-canary -n vk67220-ns
 
 ============================================================================================================================
 
+
+
+============================================================================================================================
+ConfigMap & Secret
+============================================================================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata: 
+  name: vk67220-ns
+---
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: employee-app-config
+  namespace: vk67220-ns
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/employees
+  POSTGRES_DB: employees
+---
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: employee-app-secret
+  namespace: vk67220-ns
+type: Opaque
+data:
+  SPRING_DATASOURCE_USERNAME: cG9zdGdyZXM=
+  SPRING_DATASOURCE_PASSWORD: cm9vdA==
+---
+
+---
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: vk67220-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres 
+    spec:
+      containers: 
+        - name: postgres-container
+          image: postgres:13
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: employee-app-secret
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: employee-app-secret
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: employee-app-config
+                  key: POSTGRES_DB
+---
+---
+apiVersion: v1
+kind: Service 
+metadata: 
+  name: postgres
+  namespace: vk67220-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+--- 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employee-app
+  namespace: vk67220-ns
+spec:
+  replicas: 3
+  strategy: 
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: employee-app 
+  template:
+    metadata:
+      labels:
+        app: employee-app
+    spec:
+      containers:
+        - name: employee-app-container
+          image: prasad5806/springboot-postgresql-hibernate-crud-example-app:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: employee-app-config
+                  key: SPRING_DATASOURCE_URL
+
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: employee-app-secret
+                  key: SPRING_DATASOURCE_USERNAME
+
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: employee-app-secret
+                  key: SPRING_DATASOURCE_PASSWORD
+---
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: employee-app-svc
+  namespace: vk67220-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: employee-app
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+===========================================================================================================================
+
+
