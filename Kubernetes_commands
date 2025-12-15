@@ -29,5 +29,8 @@ To see StorageClasses details ---> kubectl get storageclass -n vk67220-ns
 To verify StorageClasses info ---> kubectl describe storageclass -n vk67220-ns
 To see PVC details ---> kubectl get pvc -n vk67220-ns
 To verify PVC info ---> kubectl describe pvc -n vk67220-ns
+To delete StorageClass ---> kubectl delete storageclass <storageclass_name>
+To delete pvc ---> kubectl delete pvc <pvc_name> -n vk67220-ns
+
 
 
