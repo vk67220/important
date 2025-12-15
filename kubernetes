@@ -225,4 +225,16 @@ persistentVolumeReClaimPolicy:-
 Retain:- keeps pv + data
 Delete:- Delete pv + disk
 
+Storage Volume:-
 
+Storage volume is a place where pod stores the data
+
+volumeBindingMode:- when to create the disk
+
+immediate:-
+waitForFirstConsumer:-
+
+reclaimPolicy:-what to do after PVC is deleted 
+
+retain
+Delete
