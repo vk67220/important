@@ -18,6 +18,5 @@ To Check Rollout Status(new version) ----> kubectl rollout status deployment/<de
 To Check Rollout History ----> kubectl rollout history deployment/<deployment-name> -n <namespace>
 To Rollback to Previous Version(undo) ----> kubectl rollout undo deployment/<deployment-name> -n <namespace>
 To Verify the New Image Version ----> kubectl describe pod <new-pod-name> -n vk67220-ns | grep Image
-
-
+To see cluster detail ---> aws eks describe-cluster --name eks-practice --region us-east-1
 
