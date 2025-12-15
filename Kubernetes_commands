@@ -19,4 +19,15 @@ To Check Rollout History ----> kubectl rollout history deployment/<deployment-na
 To Rollback to Previous Version(undo) ----> kubectl rollout undo deployment/<deployment-name> -n <namespace>
 To Verify the New Image Version ----> kubectl describe pod <new-pod-name> -n vk67220-ns | grep Image
 To see cluster detail ---> aws eks describe-cluster --name eks-practice --region us-east-1
+To see ConfigMap details ---> kubectl get configmap -n vk67220-ns
+To see Secret details ---> kubectl get secret -n vk67220-ns
+To verify ConfigMap info ---> kubectl describe configmap -n vk67220-ns
+To verify secret info ---> kubectl describe secret -n vk67220-ns
+echo -n postgres|base64
+echo -n root|base64
+To see StorageClasses details ---> kubectl get storageclass -n vk67220-ns
+To verify StorageClasses info ---> kubectl describe storageclass -n vk67220-ns
+To see PVC details ---> kubectl get pvc -n vk67220-ns
+To verify PVC info ---> kubectl describe pvc -n vk67220-ns
+
 
