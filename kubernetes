@@ -238,3 +238,26 @@ reclaimPolicy:-what to do after PVC is deleted
 
 retain
 Delete
+
+=============================================================================================================================================================================
+Statefulset&stateless
+=============================================================================================================================================================================
+
+Statefulset:- statefulset is used to maintain the data permanently
+Ex:-MySql,postgresql
+
+Stateless:- stateless won't maintain the data permanently
+Ex:- nodejs,springboot,
+
+if you want to deploy DB in cluster then we will use statefulset
+if you want to deploy frontend of app,then we will use stateless(deployment)
+
+Deployment vs Statefulset
+
+deployment will create pods in random id/names
+deployment will scale down the pods in random order
+deployment are stateless pods
+
+statefulset will create pods with sticky identity
+statefulset scale down the pods in reverse order
+statefulset are stateful pods
