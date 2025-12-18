@@ -261,3 +261,5 @@ deployment are stateless pods
 statefulset will create pods with sticky identity
 statefulset scale down the pods in reverse order
 statefulset are stateful pods
+
+Headless Service → Stable pod identity & DNS
