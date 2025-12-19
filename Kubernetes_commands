@@ -31,6 +31,8 @@ To see PVC details ---> kubectl get pvc -n vk67220-ns
 To verify PVC info ---> kubectl describe pvc -n vk67220-ns
 To delete StorageClass ---> kubectl delete storageclass <storageclass_name>
 To delete pvc ---> kubectl delete pvc <pvc_name> -n vk67220-ns
+To Delete Statefulset --> kubectl delete statefulset <statefulset_name> -n namespace
+
 
 
 
