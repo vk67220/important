@@ -274,3 +274,14 @@ metadata:
 spec:
   serviceName: postgres-headless
   replicas: 1
+
+=============================================================================================================================================================================
+Daemonset
+=============================================================================================================================================================================
+if you want to deploy 1 pod in each worker node then we will go for daemonset
+in real time daemonset is used for log monitoring
+
+when to use daemonset?
+1)log collector
+2)node monitoring
+
