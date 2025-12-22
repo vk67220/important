@@ -262,6 +262,9 @@ statefulset will create pods with sticky identity
 statefulset scale down the pods in reverse order
 statefulset are stateful pods
 
+StatefulSet never merges data between pods.
+Each pod owns its own PVC. Data stays with that PVC only.
+
 Headless Service → Stable pod identity & DNS
 
 if you creating headless service then in statefulset manifest file please add these line 
