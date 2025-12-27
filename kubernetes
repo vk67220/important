@@ -285,3 +285,17 @@ when to use daemonset?
 1)log collector
 2)node monitoring
 
+
+Helm:- is a package manager for kubernetes 
+helm used to define,install,upgrade and manage kubernetes application
+
+Advantages:-
+One command install everything
+versioning + rollback support
+centralized configuration
+reusable templates
+
+chart.yaml -- Metadata of helm chart (name,version)
+values.yaml -- Default configuration values used by templates
+charts -- stores dependent helm charts ex-database,
+templates -- kubernetes yaml files 
