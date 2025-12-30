@@ -1147,6 +1147,48 @@ kubectl delete pvc postgres-storage-postgres-1 -n vk67220-ns
 kubectl delete pvc postgres-storage-postgres-2 -n vk67220-ns
 
 
+=============================================================================================================================
+Helm Charts 
+=============================================================================================================================
 
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
 
+helm version
+
+helm env
+
+Create a Helm chart
+
+helm create employee-app
+cd employee-app
+
+employee-app/
+├── Chart.yaml
+├── values.yaml
+└── templates/
+    ├── namespace.yml
+    ├── storageclass.yml
+    ├── configmap.yml
+    ├── secret.yml
+    ├── headless_service.yml
+    ├── postgresql_statefulset_secret_config_volume.yml
+    ├── postgres_service.yml
+    ├── app_deployment_config_secret.yml
+    └── app_service.yml
+
+Validate Helm chart
+
+helm lint .
+
+helm template employee-app .
+
+Install Helm chart (EXECUTION)
+
+helm install employee-app .
+
+or
+
+helm install employee-app . -f values.yaml
 
