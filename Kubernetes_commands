@@ -34,6 +34,49 @@ To delete StorageClass ---> kubectl delete storageclass <storageclass_name>
 To delete pvc ---> kubectl delete pvc <pvc_name> -n vk67220-ns
 To Delete Statefulset --> kubectl delete statefulset <statefulset_name> -n namespace
 
+Helm commands
+
+helm version
+helm env
+helm help
+
+helm create employee-app
+
+helm lint .
+helm template employee-app .
+helm template employee-app . -f values.yaml
+helm install employee-app . --dry-run
+helm install employee-app . --debug
 
 
+Helm Install / Upgrade / Uninstall (MOST USED)
 
+helm install employee-app .
+helm install employee-app . -f values.yaml
+helm upgrade employee-app .
+helm upgrade employee-app . -f values-prod.yaml
+helm uninstall employee-app
+
+Helm Rollback (PRODUCTION CRITICAL)
+
+helm rollback employee-app 1
+
+
+Helm Values & Configuration
+
+helm show values bitnami/nginx
+helm get values employee-app
+helm get manifest employee-app
+helm get all employee-app
+
+Helm Dependency Management (Microservices)
+
+helm dependency list
+helm dependency update
+helm dependency build
+
+Real-Time CI/CD Helm Flow
+
+helm lint .
+helm template employee-app . -f values.yaml
+helm upgrade --install employee-app . -f values-prod.yaml
