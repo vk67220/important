@@ -286,6 +286,9 @@ when to use daemonset?
 2)node monitoring
 
 
+=============================================================================================================================
+Helm Charts
+=============================================================================================================================
 Helm:- is a package manager for kubernetes 
 helm used to define,install,upgrade and manage kubernetes application
 
@@ -299,3 +302,18 @@ chart.yaml -- Metadata of helm chart (name,version)
 values.yaml -- Default configuration values used by templates
 charts -- stores dependent helm charts ex-database,
 templates -- kubernetes yaml files 
+
+=============================================================================================================================
+AutoScaling
+=============================================================================================================================
+It is a process of increasing or decreasing the infrastructure or resources based on demand
+increasing or decreasing the pods manually is a complex process
+
+Types of AutoScaling:-
+1)Horizontal AutoScaling -- increasing the number of resources 
+2)Vertical AutoScaling -- increasing the capacity of single system
+
+HPA- HorizontalPodAutoScaling -- Preferred
+VPA- VerticalPodAutoScaling
+
+HPA will interact with metric server to identify the cpu/memory utilization of the PODS
