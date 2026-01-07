@@ -113,6 +113,14 @@ StorageClass
 aws ec2 describe-volumes \
   --filters Name=tag:kubernetes.io/created-for/pvc/name,Values=postgres-storage-postgres-0
 
+or to get only volume ID
+
+aws ec2 describe-volumes \
+  --filters Name=tag:kubernetes.io/created-for/pvc/name,Values=postgres-storage-postgres-0 \
+  --query "Volumes[].VolumeId" \
+  --output text
+
+
 aws ec2 delete-volume --volume-id <volume-id>
 
 kubectl delete storageclass vk67220-storage-duplicate
