@@ -1192,3 +1192,21 @@ or
 
 helm install employee-app . -f values.yaml
 
+===========================================================================================================================
+K8S Autoscaling(HPA)
+===========================================================================================================================
+Amazon EKS(install metrics first)
+
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+helm install metrics-server metrics-server/metrics-server -n kube-system
+
+Verify
+
+kubectl get apiservices | grep metrics
+
+Expected:
+v1beta1.metrics.k8s.io   Available
+
+
+
+
