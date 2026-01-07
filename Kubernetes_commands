@@ -93,3 +93,28 @@ Metrics server ---> kubectl get pods -n kube-system | grep metrics
 Verify CPU Requests ---> kubectl get deployment employee-app -n vk67220-ns -o yaml | grep -A10 resources
 To delete hpa ---> kubectl delete hpa employee-app-hpa -n vk67220-ns
 
+
+
+
+CORRECT DELETE ORDER (IMPORTANT)
+Always delete in this order:
+Pod / StatefulSet:-
+kubectl delete statefulset postgres -n vk67220-ns
+
+PVC
+kubectl delete pvc postgres-storage-postgres-0 -n vk67220-ns
+
+PV (if needed)
+ReclaimPolicy: Retain
+kubectl get pv
+kubectl delete pv pvc-bdc8330a-bbaa-401c-b779-92e5dd0bf306
+
+StorageClass
+aws ec2 describe-volumes \
+  --filters Name=tag:kubernetes.io/created-for/pvc/name,Values=postgres-storage-postgres-0
+
+aws ec2 delete-volume --volume-id <volume-id>
+
+kubectl delete storageclass vk67220-storage-duplicate
+
+
