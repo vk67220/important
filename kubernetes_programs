@@ -1207,6 +1207,21 @@ kubectl get apiservices | grep metrics
 Expected:
 v1beta1.metrics.k8s.io   Available
 
+To test HPA follow below steps 
+
+1)Verify HPA
+kubectl get hpa -n vk67220-ns
+
+2)Generate Load (for testing HPA)
+kubectl exec -it <employee-app-pod> -n vk67220-ns -- sh -c "while true; do :; done"
+
+3)verify
+kubectl get hpa employee-app-hpa -n vk67220-ns -w
+
+4)verify pods 
+kubectl get pods -n vk67220 -w
+
+
 
 
 
