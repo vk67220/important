@@ -15,6 +15,7 @@ Create custom namespace in k8s cluster ---> kubectl create ns <NameSpaceName>
 To delete Namespace -----> kubectl delete ns <NameSpaceName>
 To get ReplicationController details ----> kubectl get rc
 To scale up and scale down ReplicationController ----> kubectl scale rc <RCName> --replicas 3
+To start or Stop the pod Deployment ---> kubectl scale deployment employee-app -n vk67220-ns --replicas=0
 To Check Rollout Status(new version) ----> kubectl rollout status deployment/<deployment-name> -n <namespace>
 To Check Rollout History ----> kubectl rollout history deployment/<deployment-name> -n <namespace>
 To Rollback to Previous Version(undo) ----> kubectl rollout undo deployment/<deployment-name> -n <namespace>
