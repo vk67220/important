@@ -349,4 +349,29 @@ DNS failure	      Networking
 PVC Pending	      Storage
 
 
+=============================================================================================================================
+Kubernetes Probes
+=============================================================================================================================
+
+Probes are periodic checks performed by kubelet on containers to determine their health and readiness
+
+Kubernetes probes are 3 types
+
+1)Liveness probe  - liveness probes checks whether your application is alive or stuck,
+                    if pod fails continously,kubelet restart the container automatically
+
+2)readiness probe - readiness probes checks whether an application is ready to receive traffic
+                    if it fails - pod will removed,no restart happens 
+
+3)start up probe  - startup probe checks the application is started successfully
+                    until startup probe is succeed
+                    liveness and readiness is ignored
+
+shortcuts 
+liveness probe - restart container
+readiness probe - stops traffic
+startup - protects slow startups
+
+
+
 
