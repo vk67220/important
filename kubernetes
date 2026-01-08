@@ -333,6 +333,9 @@ scheduler looks at resource requests not limits
 
 
 
+ResourceQuota:-
+
+resourcequota is a namespace level policy that limits how many resources a namespace is allowed to use
 
 
 Error	            Layer
