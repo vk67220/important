@@ -317,3 +317,33 @@ HPA- HorizontalPodAutoScaling -- Preferred
 VPA- VerticalPodAutoScaling
 
 HPA will interact with metric server to identify the cpu/memory utilization of the PODS
+
+=============================================================================================================================
+Kubernetes Resources 
+=============================================================================================================================
+
+kubernetes manages nodes resources and allocates them to pods 
+
+types of resources :-
+cpu - 200m
+memory - 250mi
+
+Kubernetes Scheduler is responsible for deciding where a Pod should run.
+scheduler looks at resource requests not limits 
+
+
+
+
+
+Error	            Layer
+CrashLoopBackOff	Application
+OOMKilled	        Memory
+Pending	          Scheduler
+ImagePullBackOff	Registry
+Evicted	          Node
+NotReady	        Node
+DNS failure	      Networking
+PVC Pending	      Storage
+
+
+
