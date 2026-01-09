@@ -337,18 +337,6 @@ ResourceQuota:-
 
 resourcequota is a namespace level policy that limits how many resources a namespace is allowed to use
 
-
-Error	            Layer
-CrashLoopBackOff	Application
-OOMKilled	        Memory
-Pending	          Scheduler
-ImagePullBackOff	Registry
-Evicted	          Node
-NotReady	        Node
-DNS failure	      Networking
-PVC Pending	      Storage
-
-
 =============================================================================================================================
 Kubernetes Probes
 =============================================================================================================================
@@ -372,6 +360,18 @@ liveness probe - restart container
 readiness probe - stops traffic
 startup - protects slow startups
 
+=============================================================================================================================
 
+
+
+Error	            Layer
+CrashLoopBackOff	Application
+OOMKilled	        Memory
+Pending	          Scheduler
+ImagePullBackOff	Registry
+Evicted	          Node
+NotReady	        Node
+DNS failure	      Networking
+PVC Pending	      Storage
 
 
