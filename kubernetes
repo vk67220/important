@@ -375,3 +375,5 @@ DNS failure	      Networking
 PVC Pending	      Storage
 
 
+OOMKilled = container crossed limit
+Evicted = node under pressure
