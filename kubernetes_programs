@@ -1219,11 +1219,39 @@ kubectl exec -it <employee-app-pod> -n vk67220-ns -- sh -c "while true; do :; do
 kubectl get hpa employee-app-hpa -n vk67220-ns -w
 
 4)verify pods 
-kubectl get pods -n vk67220 -w
+kubectl get pods -n vk67220 -wkubectl exec -it employee-app-xxx -n vk67220-ns -- sh
+
 
 ===========================================================================================================================
 k8s resources 
 ===========================================================================================================================
+
+To test resources use below commands
+
+kubectl get pod <pod-name> -n vk67220-ns -o yaml | grep -A10 resources
+
+View usage
+
+kubectl top pod -n vk67220-ns
+
+Test CPU limit enforcement
+kubectl exec -it employee-app-xxx -n vk67220-ns -- sh
+Generate CPU load
+yes > /dev/null
+Watch CPU
+kubectl top pod employee-app-xxx -n vk67220-ns
+
+Test memory limit enforcement
+Allocate memory
+kubectl exec -it employee-app-xxx -n vk67220-ns -- sh
+yes | head -n 500000000 > /tmp/memtest
+Check pod status
+kubectl get pod -n vk67220-ns
+
+Check events
+kubectl describe pod employee-app-xxx -n vk67220-ns
+
+
 
 
 
