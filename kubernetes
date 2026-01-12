@@ -377,3 +377,7 @@ PVC Pending	      Storage
 
 OOMKilled = container crossed limit
 Evicted = node under pressure
+
+Role provides namespace-scoped permissions
+ClusterRole provides cluster-wide permissions
+ServiceAccount is just an identity
