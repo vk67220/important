@@ -1251,6 +1251,211 @@ kubectl get pod -n vk67220-ns
 Check events
 kubectl describe pod employee-app-xxx -n vk67220-ns
 
+============================================================================================================================
+RBAC
+============================================================================================================================
+ServiceAccount
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: emp-app-sa
+  namespace: vk67220-ns
+---
+
+Role
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: emp-app-role
+  namespace: vk67220-ns
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services","persistentvolumeclaims","configmaps","secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets","statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+---
+
+RoleBinding
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: emp-app-rolebinding
+  namespace: vk67220-ns
+subjects:
+  - kind: ServiceAccount
+    name: emp-app-sa
+    namespace: vk67220-ns
+roleRef:
+  kind: Role
+  name: emp-app-role
+  apiGroup: rbac.authorization.k8s.io
+---
+
+template:
+  metadata:
+    labels:
+      app: postgres
+  spec:
+    serviceAccountName: emp-app-sa
+    containers:
+      - name: postgres
+        image: postgres:13
+
+
+template:
+  metadata:
+    labels:
+      app: employee-app
+  spec:
+    serviceAccountName: emp-app-sa
+    containers:
+      - name: employee-app
+        image: prasad5806/springboot-postgresql-hibernate-crud-example-app:latest
+
+
+Test RBAC using kubectl auth can-i
+
+kubectl auth can-i get pods \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+kubectl auth can-i list services \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+kubectl auth can-i get deployments.apps \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+kubectl auth can-i get statefulsets.apps \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+should return yes
+
+
+kubectl auth can-i create pods \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+kubectl auth can-i delete deployments.apps \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+kubectl auth can-i apply pods \
+  --as=system:serviceaccount:vk67220-ns:emp-app-sa \
+  -n vk67220-ns
+
+should return no
+
+kubectl delete pod employee-app-9956d9c7f-mnm44 -n vk67220-ns \     ------> it won't work
+--as=system:serviceaccount:vk67220-ns:emp-app-sa
+
+kubectl get pods -n vk67220-ns \                                    ------> it will work
+--as=system:serviceaccount:vk67220-ns:emp-app-sa
+
+
+
+Create RBAC Test Pod
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rbac-test-pod
+  namespace: vk67220-ns
+spec:
+  serviceAccountName: emp-app-sa
+  containers:
+    - name: kubectl
+      image: bitnami/kubectl:latest
+      command: ["sleep", "3600"]
+
+kubectl apply -f rbac-test-pod.yml
+
+kubectl get pod rbac-test-pod -n vk67220-ns
+
+kubectl exec -it rbac-test-pod -n vk67220-ns -- /bin/bash
+
+pass
+
+kubectl get pods -n vk67220-ns
+kubectl get services -n vk67220-ns
+kubectl get deployments -n vk67220-ns
+kubectl get statefulsets -n vk67220-ns
+kubectl get configmaps -n vk67220-ns
+kubectl get secrets -n vk67220-ns
+kubectl get hpa -n vk67220-ns
+
+Fails
+
+kubectl create deployment test --image=nginx -n vk67220-ns
+kubectl delete pod rbac-test-pod -n vk67220-ns
+kubectl apply -f any.yaml
+
+
+ClusterRole
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vk67220-cluster-readonly
+rules:
+- apiGroups: [""]
+  resources:
+    - nodes
+    - namespaces
+    - persistentvolumes
+  verbs: ["get", "list", "watch"]
+
+ClusterRoleBinding
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vk67220-cluster-readonly-binding
+subjects:
+- kind: Group
+  name: dev-team
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: vk67220-cluster-readonly
+  apiGroup: rbac.authorization.k8s.io
+
+kubectl edit configmap aws-auth -n kube-system
+
+mapRoles: |
+  - rolearn: arn:aws:iam::123456789012:role/dev-role
+    username: dev-role
+    groups:
+      - dev-team
+
+
+kubectl auth can-i create namespaces --as=dev-role --as-group=dev-team
+
+kubectl auth can-i delete persistentvolumes --as=dev-role --as-group=dev-team
+
+
+Test Cluster Resources
+
+kubectl get nodes --as=dev-role --as-group=dev-team
+kubectl get ns --as=dev-role --as-group=dev-team
+kubectl get pv --as=dev-role --as-group=dev-team
+
+
+Fail
+
+kubectl delete ns vk67220-ns --as=dev-role --as-group=dev-team
+kubectl delete pv <pv-name> --as=dev-role --as-group=dev-team
 
 
 
