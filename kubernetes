@@ -360,6 +360,16 @@ liveness probe - restart container
 readiness probe - stops traffic
 startup - protects slow startups
 
+
+=============================================================================================================================
+Taints and tolerations
+=============================================================================================================================
+
+Taints:-taints are used to prevent Pods from running on specific nodes
+     types----noschedule,prefernoschedule,noexecute
+
+Tolerations:-tolerations allow Pods to run on nodes that have taints.
+
 =============================================================================================================================
 
 
@@ -382,11 +392,4 @@ Role provides namespace-scoped permissions
 ClusterRole provides cluster-wide permissions
 ServiceAccount is just an identity
 
-=============================================================================================================================
-Taints and tolerations
-=============================================================================================================================
 
-Taints:-taints are used to prevent Pods from running on specific nodes
-     types----noschedule,prefernoschedule,noexecute
-
-Tolerations:-tolerations allow Pods to run on nodes that have taints.
