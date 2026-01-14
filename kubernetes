@@ -370,6 +370,9 @@ Taints:-taints are used to prevent Pods from running on specific nodes
 
 Tolerations:-tolerations allow Pods to run on nodes that have taints.
 
+nodeselector:-nodeSelector is used to tell a Pod to run on a node that has specific labels.
+         ----If no node has the label, the Pod stays in Pending state.
+
 =============================================================================================================================
 
 
