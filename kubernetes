@@ -379,6 +379,8 @@ Node Affinity:- it helps in placing pods on specific nodes
 
 operators - in ,NotIn,Exists,DoesNotExists
 
+Pod Anti Affinity:- pods do not run together on same node
+                    distribute pods across multiple nodes
 
 
 =============================================================================================================================
