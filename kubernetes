@@ -373,6 +373,14 @@ Tolerations:-tolerations allow Pods to run on nodes that have taints.
 nodeselector:-nodeSelector is used to tell a Pod to run on a node that has specific labels.
          ----If no node has the label, the Pod stays in Pending state.
 
+Node Affinity:- it helps in placing pods on specific nodes 
+              requiredDuringSchedulingIgnoredDuringExecution  - If no node matches → Pod will be Pending
+              preferredDuringSchedulingIgnoredDuringExecution - Pod can run on other nodes also.
+
+operators - in ,NotIn,Exists,DoesNotExists
+
+
+
 =============================================================================================================================
 
 
