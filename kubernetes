@@ -388,6 +388,13 @@ Ingress Controller
 =============================================================================================================================
 
 Ingress controller is used to map external url's to k8s cluster services 
+
+why to use ingress controller
+
+One external entry point (single LoadBalancer)
+Host-based routing (example.com / api.example.com)
+Path-based routing (/app, /api)
+SSL / TLS termination (HTTPS)
 =============================================================================================================================
 
 Error	            Layer
