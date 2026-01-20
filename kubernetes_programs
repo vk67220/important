@@ -1465,6 +1465,8 @@ taints and tolerations
 STEP1:-Choose one node for DB
 kubectl get nodes -o wide
 
+kubectl get nodes --show-labels
+
 Add Label to DB node
 kubectl label node ip-10-0-1-24.ec2.internal role=db
 
@@ -1482,9 +1484,5 @@ kubectl describe pod postgres-0 -n vk67220-ns | grep -i toleration -A3
 kubectl describe pod postgres-0 -n vk67220-ns | grep -i node
 
 
-
-
-
-Verify taint:
-kubectl describe node ip-192-168-1-10 | grep -i taint
+==========================================================================================================================
 
