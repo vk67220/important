@@ -395,6 +395,12 @@ One external entry point (single LoadBalancer)
 Host-based routing (example.com / api.example.com)
 Path-based routing (/app, /api)
 SSL / TLS termination (HTTPS)
+
+Routing types:-
+1)port based routing
+2)path based routing
+
+
 =============================================================================================================================
 
 Error	            Layer
