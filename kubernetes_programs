@@ -1545,5 +1545,16 @@ nslookup techsolutions.devopstechz.store
 kubectl get ingress -n vk67220-ns
 kubectl describe ingress employee-app-ingress -n vk67220-ns
 
+go inside the db pod
+kubectl exec -it postgres-0 -n vk67220-ns -- sh
 
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    email_address VARCHAR(255) UNIQUE NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100)
+);
+
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john.doe@gmail.com', 'John', 'Doe');
 
