@@ -1485,4 +1485,65 @@ kubectl describe pod postgres-0 -n vk67220-ns | grep -i node
 
 
 ==========================================================================================================================
+Ingress Controller
+==========================================================================================================================
+
+kubectl get nodes
+
+kubectl get nodes --show-labels | grep role
+
+kubectl label node ip-10-0-1-58.ec2.internal role=db
+
+kubectl taint nodes ip-10-0-1-58.ec2.internal dedicated=db:NoSchedule
+
+now run all yaml files
+
+kubectl get pods -n vk67220-ns -o wide
+kubectl describe pod postgres-0 -n vk67220-ns | grep -i toleration -A3
+kubectl describe pod postgres-0 -n vk67220-ns | grep -i node
+
+Install NGINX Ingress Controller (AWS)
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/aws/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/aws/deploy.yaml
+
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+kubectl get svc ingress-nginx-controller -n ingress-nginx
+
+
+vi ingress.yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: employee-app-ingress
+  namespace: vk67220-ns
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: techsolutions.devopstechz.store
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: employee-app-svc
+            port:
+              number: 80
+
+
+kubectl get svc ingress-nginx-controller -n ingress-nginx
+
+Hostinger DNS Setup
+
+Type	    Name	               Points to
+CNAME	 techsolutions	   a1b2c3d4e5f6.elb.amazonaws.com
+
+nslookup techsolutions.devopstechz.store
+
+kubectl get ingress -n vk67220-ns
+kubectl describe ingress employee-app-ingress -n vk67220-ns
+
+
 
