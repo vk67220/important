@@ -1558,3 +1558,8 @@ CREATE TABLE employees (
 INSERT INTO employees (email_address, first_name, last_name)
 VALUES ('john.doe@gmail.com', 'John', 'Doe');
 
+
+Test working or not
+curl -H "Host: techsolutions.devopstechz.store" http://<LB-DNS>/api/v1/employees
+browser 
+http://techsolutions.devopstechz.store/api/v1/employees/
