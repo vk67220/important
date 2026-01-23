@@ -402,7 +402,20 @@ Routing types:-
 
 
 =============================================================================================================================
+ArgoCD
+=============================================================================================================================
 
+Argo CD is a gitops continous delivery tool for kubernetes
+it is used to deploy,manage kubernetes application by syncing them from git repository
+
+Advantages:-
+
+Auto Deployment
+Auto sync
+self healing
+roll back easily
+multi environment support - qa,dev,prod
+============================================================================================================================
 Error	            Layer
 CrashLoopBackOff	Application
 OOMKilled	        Memory
