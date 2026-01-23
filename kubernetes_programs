@@ -1751,6 +1751,7 @@ kubectl describe application employee-project -n argocd
 kubectl describe application employee-project -n argocd | tail -n 30
 kubectl logs -n argocd deploy/argocd-repo-server --tail=30
 kubectl get application employee-project -n argocd -o yaml | grep -A8 source:
+kubectl describe application employee-project -n argocd | sed -n '/Status:/,/Events:/p'
 
 
 
@@ -1770,6 +1771,8 @@ kubectl apply -f your-app.yaml
 kubectl patch application employee-project -n argocd --type='json' -p='[{"op":"replace","path":"/spec/source/path","value":"."}]'
 kubectl get application employee-project -n argocd -o jsonpath='{.spec.source.path}{"\n"}'
 
+After every change in argocd yaml file we have to execute below command
+kubectl annotate application employee-project -n argocd argocd.argoproj.io/refresh=hard --overwrite
 
 
 
