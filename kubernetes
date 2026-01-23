@@ -415,6 +415,19 @@ Auto sync
 self healing
 roll back easily
 multi environment support - qa,dev,prod
+
+ArgoCD application statuses
+
+synced
+outofsync
+healthy
+degraded
+
+How ArgoCD works?
+ArgoCD watches the Git repository
+Compares desired state (Git) vs live state (cluster)
+If mismatch → it syncs changes into the cluster
+Keeps app in Synced and Healthy status
 ============================================================================================================================
 Error	            Layer
 CrashLoopBackOff	Application
