@@ -1598,9 +1598,182 @@ CREATE TABLE employees (
 
 INSERT INTO employees (email_address, first_name, last_name)
 VALUES ('john.doe@gmail.com', 'John', 'Doe');
-
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john1.doe1@gmail.com', 'John1', 'Doe1');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john2.doe2@gmail.com', 'John2', 'Doe2');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john3.doe3@gmail.com', 'John3', 'Doe3');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john4.doe4@gmail.com', 'John4', 'Doe4');
 
 Test working or not
 curl -H "Host: techsolutions.devopstechz.store" http://<LB-DNS>/api/v1/employees
 browser 
 http://techsolutions.devopstechz.store/api/v1/employees/
+
+
+
+===========================================================================================================================
+Argo CD
+===========================================================================================================================
+
+kubectl get nodes
+
+kubectl label node <DB_NODE_NAME> role=db
+kubectl taint node <DB_NODE_NAME> dedicated=db:NoSchedule
+
+kubectl describe node <DB_NODE_NAME> | egrep -i "Labels|Taints"
+
+Create Git Repo for ArgoCD (GitOps)
+Create a GitHub repo name: employee-argocd-gitops
+
+now run all yaml files
+
+kubectl get pods -n vk67220-ns -o wide
+kubectl describe pod postgres-0 -n vk67220-ns | grep -i toleration -A3
+kubectl describe pod postgres-0 -n vk67220-ns | grep -i node
+
+
+
+Install NGINX Ingress Controller (Required before Ingress works)
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/aws/deploy.yaml
+
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+kubectl get svc ingress-nginx-controller -n ingress-nginx
+
+Hostinger DNS Setup
+
+Type	    Name	               Points to
+CNAME	 techsolutions	   a1b2c3d4e5f6.elb.amazonaws.com
+
+nslookup techsolutions.devopstechz.store
+
+kubectl get ingress -n vk67220-ns
+kubectl describe ingress employee-app-ingress -n vk67220-ns
+
+go inside the db pod
+kubectl exec -it postgres-0 -n vk67220-ns -- sh
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    email_address VARCHAR(255) UNIQUE NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100)
+);
+
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john.doe@gmail.com', 'John', 'Doe');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john1.doe1@gmail.com', 'John1', 'Doe1');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john2.doe2@gmail.com', 'John2', 'Doe2');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john3.doe3@gmail.com', 'John3', 'Doe3');
+INSERT INTO employees (email_address, first_name, last_name)
+VALUES ('john4.doe4@gmail.com', 'John4', 'Doe4');
+
+Test working or not
+curl -H "Host: techsolutions.devopstechz.store" http://<LB-DNS>/api/v1/employees
+browser 
+http://techsolutions.devopstechz.store/api/v1/employees/
+
+4) Install ArgoCD in Kubernetes
+
+Lets setup ArgoCD using HELM;
+------------------------------------------------
+Install HELM
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+helm version
+
+Install ARGOCD using HELM
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+
+In production, it is always suggested to create a custom namespace ----> kubectl create namespace argocd ----> Lets install argocd in the namespace 'argocd' ----> helm install argocd argo/argo-cd --namespace argocd ----> kubectl get all -n argocd ----> You will see multiple things which are running ----> Under 'services' you can see 'argo-cd server' and the type as ClusterIP. But to access outside of the cluster, we need Load Balancer. So lets edit this ClusterIP to LoadBalancer ----> For this i will use patch ----> 
+
+EXPOSE ARGOCD SERVER:
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}' ----> kubectl get all -n argocd ----> Now you can see the service called 'argo-cd server' changed to Load Balancer instead of ClusterIP ----> Copy the load balancer url ----> This is one way of getting the loadbalancer url. Another way is to install "jq" (J Query) ----> 
+
+yum install jq -y
+
+kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname'
+The above command will provide load balancer URL to access ARGO CD
+
+Access the argocd using teh above load balancer url ----> Username: admin, 
+
+TO GET ARGO CD PASSWORD:
+------------------------------------------
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+----> Copy the password and provide in argo cd console ----> You will see the argo cd console ----> Follow as explained in the video
+
+argocd yml file
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: employee-project
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/vk67220/employee-argocd-gitops.git
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vk67220-ns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+---
+
+kubectl apply -f argocd-app.yml
+
+-----Confirm ArgoCD deployment--------
+
+kubectl get applications -n argocd
+
+Test:-
+kubectl get pods -n argocd
+
+kubectl get applications -n argocd
+
+if any error or sync issue below command to check the issue
+
+kubectl describe application employee-project -n argocd 
+kubectl describe application employee-project -n argocd | tail -n 30
+kubectl logs -n argocd deploy/argocd-repo-server --tail=30
+kubectl get application employee-project -n argocd -o yaml | grep -A8 source:
+
+
+
+Restart repo-server (most common fix):
+kubectl rollout restart deploy/argocd-repo-server -n argocd
+kubectl rollout restart statefulset/argocd-application-controller -n argocd
+kubectl rollout restart deploy/argocd-server -n argocd
+
+Check status again
+kubectl get applications -n argocd
+kubectl get all -n argocd
+
+If still not changing (last option, clean reset) --cases if sync status is unknow do the below steps
+kubectl delete application employee-project -n argocd
+kubectl apply -f your-app.yaml
+
+kubectl patch application employee-project -n argocd --type='json' -p='[{"op":"replace","path":"/spec/source/path","value":"."}]'
+kubectl get application employee-project -n argocd -o jsonpath='{.spec.source.path}{"\n"}'
+
+
+
+
+
+
+
+
