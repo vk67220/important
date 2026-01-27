@@ -11,5 +11,13 @@ create and push docker images
 deploy the application to k8s
 send notifications
 
+Events:- triggers
+1)push
+2)pull_request
+3)workflow_dispatch
+4)schedule
+
+
+
 
 
