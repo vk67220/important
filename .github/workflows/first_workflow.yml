@@ -8,3 +8,5 @@ jobs:
         run: echo "This is the first step of the first pipeline."
       - name: Second Step
         run: echo "This is the second step of the first pipeline."
+      - name: Third Step
+        run: sudo apt-get update
