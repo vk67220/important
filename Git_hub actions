@@ -1,1 +1,15 @@
 
+Github_Actions 
+
+github actions is an automated toll built in to guthub
+automatically runs the task when someting happens in you respository
+
+Steps :-
+test
+build
+create and push docker images
+deploy the application on k8s
+send notifications
+
+
+
