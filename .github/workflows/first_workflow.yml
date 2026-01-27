@@ -10,3 +10,7 @@ jobs:
         run: echo "This is the second step of the first pipeline."
       - name: Third Step
         run: sudo apt-get update
+      - name: multiple commands
+        run: |
+          echo "First command"
+          echo "Second Command"
