@@ -8,7 +8,7 @@ Steps :-
 test
 build
 create and push docker images
-deploy the application on k8s
+deploy the application to k8s
 send notifications
 
 
