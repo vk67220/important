@@ -17,7 +17,7 @@ Events:- triggers
 3)workflow_dispatch
 4)schedule
 
-action/checkout@v3 --- means download github repository source sode in to the runner so thr workflow can build,test and deploy
+action/checkout@v3 --- means download github repository source sode in to the runner so thr workflow can build,test or deploy it
 
 
 
