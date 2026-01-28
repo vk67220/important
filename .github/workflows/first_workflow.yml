@@ -14,4 +14,4 @@ jobs:
         run: |
           echo "First command"
           echo "Second Command"
-          ECHO "Third Command"
+          echo "Third Command"
