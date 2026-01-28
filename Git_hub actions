@@ -19,5 +19,5 @@ Events:- triggers
 
 action/checkout@v3 --- means download github repository source sode in to the runner so thr workflow can build,test or deploy it
 
-
+needs: build --->if build is successfull then only execute another job 
 
