@@ -23,7 +23,9 @@ action/checkout@v3 --- means download github repository source sode in to the ru
 needs: build --->if build is successfull then only execute another job 
 
 
-Push event filter
+Push event filter:-
+
+push = post-merge deployment (CD)
 
 on:
   push:
@@ -32,6 +34,9 @@ on:
    paths:
      - 'src/**'
      - '**/pom.xml'
+
+
+pull_request = pre-merge validation(CI)
 
 
 
