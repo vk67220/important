@@ -192,4 +192,22 @@ we can organize the playbook
 we can encapsulate the playbook
 we can reduce length of the playbook
 
+=============================================================================================================
+
+Use --limit to rerun on failed nodes
+deploy without downtime -- serial
+ou have 10 app servers but DB migration must run only once. How? -- run_once: true
+
+File exists check before action
+Check if /opt/app/config.yml exists before updating.
+- stat:
+    path: /opt/app/config.yml
+  register: file_status
+
+group_vars is used to define variables for group of hosts in your inventory
+
+Playbook slow on many servers
+
+Increase forks
+Disable fact gathering
 
