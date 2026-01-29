@@ -196,7 +196,7 @@ we can reduce length of the playbook
 
 Use --limit to rerun on failed nodes
 deploy without downtime -- serial
-ou have 10 app servers but DB migration must run only once. How? -- run_once: true
+you have 10 app servers but DB migration must run only once. How? -- run_once: true
 
 File exists check before action
 Check if /opt/app/config.yml exists before updating.
@@ -207,7 +207,10 @@ Check if /opt/app/config.yml exists before updating.
 group_vars is used to define variables for group of hosts in your inventory
 
 Playbook slow on many servers
-
 Increase forks
 Disable fact gathering
 
+group_vars → Variables shared by multiple servers
+host_vars → Variables only for one server
+
+host_vars - more priority then group_vars
