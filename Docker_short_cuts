@@ -40,3 +40,11 @@ services:
 
 networks:
 volumes:
+
+
+
+How do you troubleshoot Docker issues?
+
+I start with docker ps, check logs, inspect container config, verify ports, env variables, volumes, and networks. 
+Then I review the Dockerfile for CMD, ENTRYPOINT, and permissions.
+
