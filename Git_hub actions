@@ -16,8 +16,22 @@ Events:- triggers
 2)pull_request
 3)workflow_dispatch
 4)schedule
+5)release
 
 action/checkout@v3 --- means download github repository source sode in to the runner so thr workflow can build,test or deploy it
 
 needs: build --->if build is successfull then only execute another job 
+
+
+Push event filter
+
+on:
+  push:
+   branches:
+     - main
+   paths:
+     - 'src/**'
+     - '**/pom.xml'
+
+
 
