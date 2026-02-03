@@ -39,5 +39,12 @@ on:
 
 pull_request = pre-merge validation(CI)
 
+Special condition function:
+
+failure()
+success()
+always()
+cancelled()
+
 
 
