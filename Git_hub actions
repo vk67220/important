@@ -51,3 +51,10 @@ Matrix strategy:-
 strategy:
   fail-fast: false
 
+
+
+Types of custom actions:-
+javascript actions 
+docker actions
+composite actions 
+
