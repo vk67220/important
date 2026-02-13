@@ -53,6 +53,23 @@ strategy:
 
 
 
+Convert your runner into a service (DO THIS NOW)
+
+Inside your EC2 runner folder:
+cd ~/actions-runner
+
+
+Run:
+sudo ./svc.sh install
+
+
+Then start service:
+sudo ./svc.sh start
+
+
+sudo ./svc.sh status
+
+
 Types of custom actions:-
 javascript actions 
 docker actions
