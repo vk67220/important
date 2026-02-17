@@ -9,6 +9,36 @@ MultiCloud Support
 state managemenet
 execution plan
 
+Terraform architecture
+
+init  
+validate
+fmt
+plan
+apply
+destroy
+
+
 Terraform workflow 
 
 write--->Init--->plan--->apply--->destroy
+
+developer writes .tf files
+       |
+       |
+terraform init
+       |
+       |
+providers downloaded
+       |
+       |
+terraform plan
+       |
+       |
+authentication with cloud
+       |
+       |
+terraform apply
+       |
+       |
+state updated
