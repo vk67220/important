@@ -1,1 +1,14 @@
 
+Terraform is a Infrastructure as a code 
+
+Infrastructure as a code means managing and creating infrastructure using code instead of manual UI creation
+
+Advantages of Terraform
+
+MultiCloud Support
+state managemenet
+execution plan
+
+Terraform workflow 
+
+write--->Init--->plan--->apply--->destroy
