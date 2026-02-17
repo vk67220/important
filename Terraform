@@ -42,3 +42,10 @@ terraform apply
        |
        |
 state updated
+
+
+.tf --- configuration files
+.tfstate --- infrastructure truth
+.terraform --- plugins 
+
+
