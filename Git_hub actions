@@ -75,3 +75,131 @@ javascript actions
 docker actions
 composite actions 
 
+
+
+
+
+
+
+
+
+
+STEP 1 - Create GitHub OIDC Provider in AWS
+
+AWS Console → IAM → Identity providers → Add provider
+
+Provider type: OpenID Connect
+
+Provider URL: https://token.actions.githubusercontent.com
+
+Audience: sts.amazonaws.com
+
+
+Create IAM Role for Self-Hosted Runner (OIDC Role)
+
+
+STEP 2 — Create IAM Role for Self-Hosted Runner (OIDC Role)
+
+Go to:
+IAM → Roles → Create role
+
+Choose:
+Web Identity
+
+Select:
+token.actions.githubusercontent.com
+Audience: sts.amazonaws.com
+
+Attach Permissions (Example)
+
+Since you are using Terraform + EKS:
+AmazonEKSClusterPolicy
+AmazonEC2FullAccess
+IAMFullAccess
+AmazonS3FullAccess
+AmazonDynamoDBFullAccess
+
+
+Name role:
+
+github-oidc-selfhosted-role
+Create role.
+
+STEP 3 — Edit Trust Policy (VERY IMPORTANT)
+
+Open role → Trust relationships → Edit
+
+Replace with:
+
+{
+ "Version": "2012-10-17",
+ "Statement": [
+  {
+   "Effect": "Allow",
+   "Principal": {
+     "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
+   },
+   "Action": "sts:AssumeRoleWithWebIdentity",
+   "Condition": {
+     "StringEquals": {
+       "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+     },
+     "StringLike": {
+       "token.actions.githubusercontent.com:sub": "repo:USERNAME/REPO:*"
+     }
+   }
+  }
+ ]
+}
+
+Replace:
+<ACCOUNT_ID> → your AWS account id
+USERNAME → your GitHub username
+REPO → your repo name
+
+
+Add Required IAM Permissions to OIDC Role
+Go to:
+AWS Console → IAM → Roles → github-oidc-selfhosted-role
+
+Click:
+Add permissions → Create inline policy
+
+Add This Policy (Minimum Required for Your Error)
+Paste this JSON:
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey",
+        "kms:TagResource",
+        "kms:DescribeKey",
+        "kms:CreateAlias",
+        "kms:EnableKeyRotation",
+        "kms:PutKeyPolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:PutRetentionPolicy",
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+Save policy.
+
+
+
+Example:
+repo:KastroVKiran/Jenkins-Terraform-EKS:*
+
+
