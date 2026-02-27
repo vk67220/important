@@ -47,3 +47,24 @@ state updated
 .tf --- configuration files
 .tfstate --- infrastructure truth
 .terraform --- plugins 
+
+
+StateFile:-  terraform.tfstate
+
+desiredstate==actualstate
+
+remote backend storage -S3,blob
+
+Imp points 
+
+store statefile into remote backend
+do not update/delete the file
+state locking
+isolation of statefile
+regular backup
+
+State locking :-prevent multiple people from running terraform at the same time on the same infrastructure
+if process crashes manually remove lock 
+terraform force-unlock <LOCK_ID>
+
+
