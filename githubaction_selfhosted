@@ -1,0 +1,50 @@
+STEP 1 — Launch Ubuntu Server (EC2)
+
+Go to AWS Console → EC2 → Launch Instance
+
+Recommended:
+
+AMI → Ubuntu 22.04 LTS
+
+Instance Type → t3.medium (minimum)
+
+Storage → 20GB+
+
+Key Pair → Create or use existing
+
+Security Group:
+
+SSH (22) → Your IP
+
+Outbound → Allow All
+
+Click Launch Instance
+
+✅ STEP 2 — Connect to Server
+
+From your local machine:
+
+ssh -i your-key.pem ubuntu@<EC2-PUBLIC-IP>
+✅ STEP 3 — Update Server
+sudo apt update -y
+sudo apt upgrade -y
+✅ STEP 4 — Install Required Tools
+🔹 Install Git
+sudo apt install git -y
+🔹 Install AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt install unzip -y
+unzip awscliv2.zip
+sudo ./aws/install
+
+Verify:
+
+aws --version
+🔹 Install Terraform
+wget https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+unzip terraform_1.8.5_linux_amd64.zip
+sudo mv terraform /usr/local/bin/
+
+Verify:
+
+terraform version
