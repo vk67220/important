@@ -43,6 +43,7 @@ s3---store state
 state locking -- prevent parallel execution
 
 if process crashes manually remove lock 
+
 terraform force-unlock <LOCK_ID>
 
 
