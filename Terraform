@@ -47,7 +47,13 @@ if process crashes manually remove lock
 terraform force-unlock <LOCK_ID>
 
 
+in real world .pem file is stored based on environment 
 
+Development / Testing Environments
 
+The .pem file is stored locally on the engineer’s machine:
+~/.ssh/devops-key.pem
 
+Production Environments
+Session Manager
 
