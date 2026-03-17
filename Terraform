@@ -61,3 +61,31 @@ Install Session Manager Plugin (if not installed)
 curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
 sudo dpkg -i session-manager-plugin.deb
 
+
+Terraform variables:-
+
+input variables
+output variables
+local variables
+
+Terraform provisioners
+provisioners in terraform are used to execute scripts or command after it is created or before it is destructed  
+
+types of provisioners
+1)remote-exec  - runs command inside the server  (inline,script,scripts)
+2)local-exec  - runs command on local machine
+3)files - copy files from local to remote server 
+
+
+user_data-- is a script that runs automatically when an ec2 instance boots 
+
+Advantages:-
+runs when ec2 starts
+no ssh required
+works in CI/CD 
+faster execution
+secure
+
+
+
+
