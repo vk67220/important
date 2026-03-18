@@ -116,6 +116,10 @@ Paste this:
 
 👉 Click Next → Name it
 
+
+
+Terraform import:- bringing already existing resources into terraform state 
+
 Example:
 
 SecretsManagerReadPolicy
