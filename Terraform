@@ -87,5 +87,70 @@ faster execution
 secure
 
 
+terraform show    --- human readable output of state
+terraform state list --- list of all resources 
+terraform state show resource_list
+terraform state pull --- download raw JSON state
 
+
+
+Step 1: Create IAM Policy
+
+Go to:
+👉 AWS Console → IAM → Policies → Create policy
+
+📄 JSON Policy
+
+Paste this:
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue"],
+      "Resource": "*"
+    }
+  ]
+}
+
+👉 Click Next → Name it
+
+Example:
+
+SecretsManagerReadPolicy
+
+👉 Click Create Policy
+
+✅ Step 2: Create IAM User (for GitHub / Jenkins)
+
+Go to:
+👉 IAM → Users → Create User
+
+Enter:
+
+Username: github-terraform-user (or jenkins-user)
+
+Select:
+
+✔ Programmatic access (Access Key)
+
+👉 Next
+
+✅ Step 3: Attach Policy
+
+👉 Choose:
+
+Attach policies directly
+
+Search and select:
+
+SecretsManagerReadPolicy
+
+👉 Also attach (important for Terraform):
+
+AmazonEC2FullAccess (or required minimal)
+AmazonS3FullAccess (if backend)
+
+👉 Next → Create User
 
