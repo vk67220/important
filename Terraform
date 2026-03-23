@@ -91,6 +91,9 @@ terraform show    --- human readable output of state
 terraform state list --- list of all resources 
 terraform state show resource_list
 terraform state pull --- download raw JSON state
+terraform state rm statelist --- remove resources 
+terraform state mv statelist old_resource_name to new_resource_name
+terraform 
 
 
 
