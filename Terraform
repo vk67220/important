@@ -35,6 +35,9 @@ terraform apply
        |
 state updated 
 
+
+
+
 StateFile:-  terraform.tfstate
 
 remote backend storage -S3,blob
