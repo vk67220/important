@@ -164,3 +164,16 @@ AmazonS3FullAccess (if backend)
 
 👉 Next → Create User
 
+
+Terraform module:-
+
+Module in terraform is a container for multiple resources that are used together....
+
+instead of writing same vpc,ec2 or security group again and again,you create a module and reuse it.
+
+
+Types of modules
+
+root module  
+child module 
+
