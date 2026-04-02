@@ -177,7 +177,13 @@ Types of modules
 root module  
 child module 
 
-Workspaces: to create multiple environments 
+Workspaces: 
+workspaces allows you to 
+1)use same terraform code
+2)create multiple environments(dev,prod)
+3)maintain separate state files automatically
+
+
 
 
 
