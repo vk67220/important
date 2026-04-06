@@ -183,6 +183,19 @@ workspaces allows you to
 2)create multiple environments(dev,prod)
 3)maintain separate state files automatically
 
+check existing workspace
+terraform workspace list
+
+create workspace
+terraform workspace new qa
+terraform workspace new dev
+
+switch workspace
+terraform workspace select dev
+
+
+
+
 
 For_each vs count
 
@@ -191,4 +204,6 @@ count is index based
 
 if we remove count = 2 then it will delete wrong one
 incase for_each only mentioned details will be deleted
+
+
 
