@@ -194,6 +194,9 @@ switch workspace
 terraform workspace select dev
 
 
+terraform data source
+
+used to fetch existing aws resources
 
 
 
