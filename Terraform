@@ -221,5 +221,7 @@ terraform plan -detailed-exitcode
 6. Destroy → Block if drift 
 
 
+lifecycle :
+  prevent_destroy = true
 
 
