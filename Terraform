@@ -213,6 +213,12 @@ Terraform Drift:-  mismataches between terraform state and actual infrastructure
 
 terraform plan -detailed-exitcode
 
+1. Apply → Infra created
+2. Manual change → Drift
+3. Pipeline → Detect drift
+4. Apply → Block 
+5. Fix drift → Apply 
+6. Destroy → Block if drift 
 
 
 
