@@ -211,6 +211,8 @@ incase for_each only mentioned details will be deleted
 
 Terraform Drift:-  mismataches between terraform state and actual infrastructure
 
+terraform plan -detailed-exitcode
+
 
 
 
