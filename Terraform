@@ -209,4 +209,9 @@ if we remove count = 2 then it will delete wrong one
 incase for_each only mentioned details will be deleted
 
 
+Terraform Drift:-  mismataches between terraform state and actual infrastructure
+
+
+
+
 
