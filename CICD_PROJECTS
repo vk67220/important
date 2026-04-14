@@ -95,6 +95,17 @@ Goto MobaXTerm ---> Come out of the terminal ---> exit
 Note: Please follow the next steps as discussed in the video.
 
 
+STORE CREDENTIALS IN GITHUB
+
+GitHub Repo → Settings → Secrets → Actions
+
+NEXUS_USERNAME = admin
+NEXUS_PASSWORD = <your-password>
+NEXUS_URL = http://<your-ip>:8081
+
+
+UPDATE pom.xml
+
 
 
 
