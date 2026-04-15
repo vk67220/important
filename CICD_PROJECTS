@@ -107,5 +107,7 @@ NEXUS_URL = http://<your-ip>:8081
 UPDATE pom.xml
 
 
-
-
+permission denied while trying to connect to docker.sock
+sudo usermod -aG docker ubuntu
+newgrp docker
+sudo systemctl restart docker
