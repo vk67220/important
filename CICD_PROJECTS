@@ -205,3 +205,120 @@ cd ~/actions-runner
 groups
 
 ./svc.sh start
+
+
+
+
+name: Java CI with Nexus (Self-Hosted + Smart MySQL)
+
+on:
+  workflow_dispatch
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    env:
+      NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+
+    steps:
+
+      # 🔹 Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 🔹 Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 🔥 Install Maven ONLY IF NOT PRESENT
+      - name: Install Maven (if not exists)
+        run: |
+          if ! command -v mvn &> /dev/null
+          then
+            echo "Maven not found. Installing..."
+            sudo apt update
+            sudo apt install maven -y
+          else
+            echo "Maven already installed"
+          fi
+
+      # 🔹 Verify Maven
+      - name: Check Maven
+        run: mvn -version
+
+      # 🔥 Start MySQL ONLY IF NOT RUNNING
+      - name: Start MySQL (Smart)
+        run: |
+          if docker inspect -f '{{.State.Running}}' mysql 2>/dev/null | grep true; then
+            echo "MySQL already running"
+          else
+            echo "Starting MySQL container..."
+
+            docker rm -f mysql || true
+
+            docker run -d \
+              --name mysql \
+              -e MYSQL_ROOT_PASSWORD=root \
+              -e MYSQL_DATABASE=testdb \
+              -p 3306:3306 \
+              mysql:8
+          fi
+
+      # 🔥 Wait for MySQL
+      - name: Wait for MySQL
+        run: |
+          for i in {1..15}; do
+            if nc -z 127.0.0.1 3306; then
+              echo "MySQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for MySQL..."
+            sleep 5
+          done
+          echo "MySQL failed to start"
+          exit 1
+
+      # 🔹 Compile
+      - name: Compile
+        run: mvn compile
+
+      # 🔥 FIX: Auto version
+      - name: Update Version (Auto Increment)
+        run: |
+         VERSION="0.0.${GITHUB_RUN_NUMBER}"
+         mvn versions:set -DnewVersion=$VERSION
+
+      # 🔹 Test
+      - name: Test
+        run: mvn test -DskipTests
+
+      # 🔹 Package
+      - name: Package
+        run: mvn package -DskipTests
+
+      # 🔹 Create Maven settings.xml (for Nexus)
+      - name: Create Maven settings.xml
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>nexus</id>
+                <username>${NEXUS_USERNAME}</username>
+                <password>${NEXUS_PASSWORD}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      # 🔹 Deploy to Nexus
+      - name: Deploy to Nexus
+        run: mvn deploy -DskipTests
+
+
