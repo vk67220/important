@@ -190,6 +190,9 @@ UPDATE pom.xml
 
 </project>
 
+
+After yaml file apply will get few errors
+
 permission denied while trying to connect to docker.sock
 
 sudo usermod -aG docker ubuntu
