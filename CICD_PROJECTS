@@ -191,6 +191,7 @@ UPDATE pom.xml
 </project>
 
 permission denied while trying to connect to docker.sock
+
 sudo usermod -aG docker ubuntu
 newgrp docker
 sudo systemctl restart docker
