@@ -577,3 +577,79 @@ After pipeline runs:
 http://<EC2-IP>:9000
 
 You should see:
+
+
+
+
+Changing Docker disk to another 
+
+1. Stop Docker
+sudo systemctl stop docker
+✅ 2. Create new Docker directory
+sudo mkdir -p /data/docker
+✅ 3. Move existing data
+sudo rsync -avz /var/lib/docker/ /data/docker/
+✅ 4. Configure Docker
+sudo vi /etc/docker/daemon.json
+
+👉 Add:
+
+{
+  "data-root": "/data/docker"
+}
+✅ 5. Restart Docker
+sudo systemctl daemon-reexec
+sudo systemctl restart docker
+✅ 6. Verify
+docker info | grep "Docker Root Dir"
+
+👉 Must show:
+
+Docker Root Dir: /data/docker ✅
+🧹 🔥 CLEAN OLD DATA (IMPORTANT)
+
+After confirming:
+
+sudo rm -rf /var/lib/docker
+🚀 TRY AGAIN
+docker run -d --name sonarqube -p 9000:9000 sonarqube:lts-community
+⚠️ EXTRA CLEANUP (IF STILL FULL)
+# Remove unused images
+docker system prune -a -f
+
+# Clean logs
+sudo journalctl --vacuum-time=1d
+
+# Remove temp
+sudo rm -rf /tmp/*
+STEP 1: Stop Docker
+sudo systemctl stop docker
+🔥 STEP 2: Move containerd data
+sudo mkdir -p /data/containerd
+sudo rsync -avz /var/lib/containerd/ /data/containerd/
+🔥 STEP 3: Backup old directory
+sudo mv /var/lib/containerd /var/lib/containerd.bak
+🔥 STEP 4: Create symlink (IMPORTANT)
+sudo ln -s /data/containerd /var/lib/containerd
+🔥 STEP 5: Start Docker
+sudo systemctl start docker
+🔥 STEP 6: Verify
+ls -ld /var/lib/containerd
+
+👉 Expected:
+
+/var/lib/containerd -> /data/containerd ✅
+🚀 NOW TRY AGAIN
+docker run -d --name sonarqube -p 9000:9000 sonarqube:lts-community
+🧪 CHECK DISK
+df -h
+
+👉 Now you should see:
+
+/data usage ↑
+/ (root) stable ✅
+🔥 OPTIONAL CLEANUP
+
+After confirming:
+
+sudo rm -rf /var/lib/containerd.bak
