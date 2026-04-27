@@ -664,3 +664,20 @@ After confirming:
 
 sudo rm -rf /var/lib/containerd.bak
 
+
+============================================================================================================================
+                                                    TRIVY
+============================================================================================================================
+Trivy :- is used for security scanner for application and infrastructure
+
+1)Finds vunerabilities 
+2)scans source code
+3)scans docker images 
+4)scans OS packages
+5)Detects secretes
+
+============================================================================================================================
+                                                      OWASP
+============================================================================================================================
+
+OWASP = Security guidelines + standards to build safe applications
