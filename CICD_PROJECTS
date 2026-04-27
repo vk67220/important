@@ -330,6 +330,16 @@ SonarQube - Code Quality Analysis
 														by
 													Kastro Kiran V
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sonarqube:-  sonarqube is code quality and security analysis tool
+
+1)finds bugs
+2)vulnerabilities
+3)show code smells
+4)measure code coverage
+5)duplicate code
+6)enforces coding standards 
+
 Step 1: Launch Ubuntu VM with instance type as t2.large, AMI: 24.04, Storage: 25 GB, No. of instances: 1
 
 Step 2: Connect to the VM
@@ -653,3 +663,4 @@ df -h
 After confirming:
 
 sudo rm -rf /var/lib/containerd.bak
+
