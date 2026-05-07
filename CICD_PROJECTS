@@ -690,3 +690,34 @@ sudo apt-get install trivy -y
 ============================================================================================================================
 
 OWASP = Security guidelines + standards to build safe applications
+
+
+============================================================================================================================
+                                                      ECR
+============================================================================================================================
+To create ECR we need to give below custom policy 
+
+CUSTOM POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DescribeRepositories",
+        "ecr:DeleteRepository",
+        "ecr:SetRepositoryPolicy",
+        "ecr:PutLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:TagResource",
+        "ecr:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+ATTACH TO THE USER 
+
+
