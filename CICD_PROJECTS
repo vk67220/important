@@ -723,10 +723,53 @@ CUSTOM POLICY
 }
 
 ATTACH TO THE USER 
-
+=============================================================================================================================
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 
 unzip awscliv2.zip
 
 sudo ./aws/install
+
+Docker compose 
+=============================================================================================================================
+sudo apt update
+
+sudo apt install docker-compose-v2 -y
+
+docker compose version
+
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: employees
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    #build: .     
+    #image: 302524629943.dkr.ecr.ap-south-1.amazonaws.com/employees-app-dev:latest 
+    image: employees-app:latest
+    container_name: springboot_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/employees
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+
+volumes:
+  postgres_data:
+
+
+
 
