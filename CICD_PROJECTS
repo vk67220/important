@@ -699,23 +699,27 @@ To create ECR we need to give below custom policy
 
 CUSTOM POLICY
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecr:CreateRepository",
-        "ecr:DescribeRepositories",
-        "ecr:DeleteRepository",
-        "ecr:SetRepositoryPolicy",
-        "ecr:PutLifecyclePolicy",
-        "ecr:GetLifecyclePolicy",
-        "ecr:TagResource",
-        "ecr:ListTagsForResource"
-      ],
-      "Resource": "*"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ecr:CreateRepository",
+                "ecr:DescribeRepositories",
+                "ecr:DeleteRepository",
+                "ecr:SetRepositoryPolicy",
+                "ecr:DeleteRepositoryPolicy",
+                "ecr:PutLifecyclePolicy",
+                "ecr:GetLifecyclePolicy",
+                "ecr:DeleteLifecyclePolicy",
+                "ecr:TagResource",
+                "ecr:ListTagsForResource",
+                "ecr:ListImages",
+                "ecr:BatchDeleteImage"
+            ],
+            "Resource": "*"
+        }
+    ]
 }
 
 ATTACH TO THE USER 
