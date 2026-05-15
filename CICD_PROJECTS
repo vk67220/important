@@ -894,5 +894,765 @@ jobs:
       - name: Cleanup Docker Images
         run: |
           docker image prune -a -f
+===============================================================================================================================
+                                                  EKS
+===============================================================================================================================
 
+Create OIDC Role
+
+IAM → Roles → Create role
+
+Select:
+Web identity
+
+Select provider:
+token.actions.githubusercontent.com
+
+Audience:
+sts.amazonaws.com
+
+Click:
+Next
+
+Attach Managed Policies
+
+Attach:
+AmazonEKSClusterPolicy
+AmazonEC2FullAccess
+IAMFullAccess
+AmazonS3FullAccess
+AmazonDynamoDBFullAccess
+AutoScalingFullAccess
+
+Click:
+Next
+
+Create Role
+Role name:
+github-oidc-selfhosted-role
+
+Click:
+Create role
+
+Update Trust Policy
+
+Open role:
+github-oidc-selfhosted-role
+
+Open:
+Trust relationships
+
+Click:
+Edit trust policy
+
+Replace with:
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::302524629943:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:app/terraform-eks:*"
+        }
+      }
+    }
+  ]
+}
+
+Replace:
+app/terraform-eks
+
+with your actual GitHub repository.
+
+Save policy
+
+Create Inline Policy
+
+Open:
+Permissions
+
+Click:
+Add permissions → Create inline policy
+
+Select:
+
+JSON
+Paste policy:
+{
+  "Version": "2012-10-17",
+  "Statement": [
+
+    {
+      "Sid": "EKSClusterManagement",
+      "Effect": "Allow",
+      "Action": [
+        "eks:CreateCluster",
+        "eks:DescribeCluster",
+        "eks:DeleteCluster",
+        "eks:UpdateClusterConfig",
+        "eks:UpdateClusterVersion",
+        "eks:TagResource",
+        "eks:ListClusters",
+
+        "eks:CreateAccessEntry",
+        "eks:DeleteAccessEntry",
+        "eks:DescribeAccessEntry",
+        "eks:ListAccessEntries",
+
+        "eks:AssociateAccessPolicy",
+        "eks:DisassociateAccessPolicy",
+        "eks:ListAssociatedAccessPolicies",
+
+        "eks:CreateNodegroup",
+        "eks:DeleteNodegroup",
+        "eks:DescribeNodegroup",
+        "eks:UpdateNodegroupConfig",
+        "eks:UpdateNodegroupVersion"
+      ],
+      "Resource": "*"
+    },
+
+    {
+      "Sid": "KMSPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey",
+        "kms:TagResource",
+        "kms:DescribeKey",
+        "kms:CreateAlias",
+        "kms:DeleteAlias",
+        "kms:EnableKeyRotation",
+        "kms:PutKeyPolicy"
+      ],
+      "Resource": "*"
+    },
+
+    {
+      "Sid": "CloudWatchLogsPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:PutRetentionPolicy",
+        "logs:DescribeLogGroups",
+        "logs:TagResource",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+
+  ]
+}
+
+OR
+
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "EKSClusterManagement",
+			"Effect": "Allow",
+			"Action": [
+				"eks:CreateCluster",
+				"eks:DescribeCluster",
+				"eks:DeleteCluster",
+				"eks:UpdateClusterConfig",
+				"eks:UpdateClusterVersion",
+				"eks:TagResource",
+				"eks:ListClusters",
+				"eks:CreateAccessEntry",
+				"eks:DeleteAccessEntry",
+				"eks:DescribeAccessEntry",
+				"eks:ListAccessEntries",
+				"eks:AssociateAccessPolicy",
+				"eks:DisassociateAccessPolicy",
+				"eks:ListAssociatedAccessPolicies",
+				"eks:CreateNodegroup",
+				"eks:DeleteNodegroup",
+				"eks:DescribeNodegroup",
+				"eks:UpdateNodegroupConfig",
+				"eks:UpdateNodegroupVersion"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "KMSPermissions",
+			"Effect": "Allow",
+			"Action": [
+				"kms:CreateKey",
+				"kms:TagResource",
+				"kms:DescribeKey",
+				"kms:CreateAlias",
+				"kms:DeleteAlias",
+				"kms:EnableKeyRotation",
+				"kms:PutKeyPolicy"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "CloudWatchLogsPermissions",
+			"Effect": "Allow",
+			"Action": [
+				"logs:CreateLogGroup",
+				"logs:DeleteLogGroup",
+				"logs:PutRetentionPolicy",
+				"logs:DescribeLogGroups",
+				"logs:TagResource",
+				"logs:ListTagsForResource"
+			],
+			"Resource": "*"
+		}
+	]
+}
+
+Click:
+
+Review policy
+
+Policy name:
+github-oidc-selfhosted-role-policy
+
+Click:
+Create policy
+
+
+github action
+
+############################################
+# backend.tf
+############################################
+terraform {
+  required_version = ">= 1.6.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "s3" {
+    bucket         = "my-eks-terraform-state-302524629943-us-east-1"
+    key            = "eks/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+}
+
+##################################
+# VPC
+##################################
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
+  name = "${var.cluster_name}-vpc"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["us-east-1a", "us-east-1b"]
+  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+  private_subnets = ["10.0.3.0/24", "10.0.4.0/24"]
+
+  map_public_ip_on_launch = true
+
+  enable_nat_gateway = true
+  single_nat_gateway = true
+
+  public_subnet_tags = {
+    "kubernetes.io/role/elb" = "1"
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = "1"
+  }
+}
+
+##################################
+# EKS
+##################################
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+
+  cluster_name    = var.cluster_name
+  cluster_version = "1.30"
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.public_subnets
+
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = false
+
+  eks_managed_node_groups = {
+    default = {
+      instance_types = ["m7i-flex.large"]
+      min_size       = 2
+      desired_size   = 2
+      max_size       = 2
+    }
+  }
+
+  access_entries = {
+    admin = {
+      principal_arn = "arn:aws:iam::302524629943:user/app"
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  
+
+  # GitHub OIDC Role (FIXES kubectl error)
+    github_actions = {
+      principal_arn = "arn:aws:iam::302524629943:role/github-oidc-selfhosted-role"
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [module.vpc]
+}
+
+############################################
+# outputs.tf
+############################################
+output "cluster_name" {
+  description = "EKS Cluster Name"
+  value       = module.eks.cluster_name
+}
+
+output "cluster_endpoint" {
+  description = "EKS Endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+output "cluster_security_group_id" {
+  description = "EKS Security Group"
+  value       = module.eks.cluster_security_group_id
+}
+
+output "region" {
+  value = var.aws_region
+}
+
+output "vpc_id" {
+  value = module.vpc.vpc_id
+}
+
+
+############################################
+# provider.tf
+############################################
+provider "aws" {
+  region = var.aws_region
+}
+
+############################################
+# variables.tf
+############################################
+variable "aws_region" {
+  description = "AWS Region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "cluster_name" {
+  description = "EKS Cluster Name"
+  type        = string
+  default     = "dev-eks"
+}
+
+
+
+
+
+name: Terraform Apply EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Select environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform:
+    runs-on: self-hosted
+    environment: ${{ inputs.target_env }}
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      #########################################
+      # Configure AWS via OIDC
+      #########################################
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::302524629943:role/github-oidc-selfhosted-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      #########################################
+      # Verify AWS Identity
+      #########################################
+      - name: Verify AWS Identity
+        run: |
+          aws sts get-caller-identity
+
+      #########################################
+      # Verify Terraform
+      #########################################
+      - name: Terraform Version
+        run: terraform version
+
+      #########################################
+      # Terraform Init
+      #########################################
+      - name: Terraform Init
+        run: terraform init
+
+      #########################################
+      # Terraform Validate
+      #########################################
+      - name: Terraform Validate
+        run: terraform validate
+
+      #########################################
+      # Terraform Plan
+      #########################################
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="aws_region=${AWS_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}"
+
+      #########################################
+      # Terraform Apply
+      #########################################
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve \
+            -var="aws_region=${AWS_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}"
+
+      #########################################
+      # Configure kubectl
+      #########################################
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${AWS_REGION} \
+            --name ${CLUSTER_NAME}
+
+      #########################################
+      # Verify EKS Nodes
+      #########################################
+      - name: Verify Nodes
+        run: kubectl get nodes
+
+      #########################################
+      # Verify Cluster Status
+      #########################################
+      - name: Verify Cluster
+        run: |
+          aws eks describe-cluster \
+            --name ${CLUSTER_NAME} \
+            --query "cluster.status"
+
+
+
+
+name: Terraform Destroy EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Select environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform-destroy:
+    runs-on: self-hosted
+    environment: ${{ inputs.target_env }}
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+
+    steps:
+
+      #########################################
+      # Checkout Repository
+      #########################################
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      #########################################
+      # Configure AWS Credentials via OIDC
+      #########################################
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::302524629943:role/github-oidc-selfhosted-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      #########################################
+      # Verify AWS Identity
+      #########################################
+      - name: Verify AWS Identity
+        run: |
+          aws sts get-caller-identity
+
+      #########################################
+      # Verify Terraform Installation
+      #########################################
+      - name: Terraform Version
+        run: terraform version
+
+      #########################################
+      # Terraform Init
+      #########################################
+      - name: Terraform Init
+        run: terraform init
+
+      #########################################
+      # Terraform Validate
+      #########################################
+      - name: Terraform Validate
+        run: terraform validate
+
+      #########################################
+      # Terraform Destroy Plan
+      #########################################
+      - name: Terraform Destroy Plan
+        run: |
+          terraform plan -destroy \
+            -var="aws_region=${AWS_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}"
+
+      #########################################
+      # Terraform Destroy
+      #########################################
+      - name: Terraform Destroy
+        run: |
+          terraform destroy -auto-approve \
+            -var="aws_region=${AWS_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}"
+
+      #########################################
+      # Verify Cluster Deletion
+      #########################################
+      - name: Verify Cluster Deletion
+        run: |
+          aws eks list-clusters --region ${AWS_REGION}
+==============================================================================================================================
+
+Step 1 — Create IAM User
+
+In Amazon Web Services Console:
+
+Go to:
+
+IAM → Users → Create user
+
+Name:
+
+app
+
+Click:
+
+Next
+Step 2 — Attach Permissions
+
+Attach:
+
+AmazonEKSClusterPolicy
+AmazonEC2FullAccess
+IAMFullAccess
+AmazonS3FullAccess
+AmazonDynamoDBFullAccess
+AutoScalingFullAccess
+
+(Optional)
+
+CloudWatchLogsFullAccess
+
+Click:
+
+Create user
+Step 3 — Create Access Key
+
+Open user:
+
+app
+
+Go to:
+
+Security credentials
+
+Click:
+
+Create access key
+
+Choose:
+
+Command Line Interface (CLI)
+
+Create key.
+
+Download:
+
+Access Key ID
+Secret Access Key
+Step 4 — Add GitHub Secrets
+
+Go to GitHub repository:
+
+Settings → Secrets and variables → Actions
+
+Add repository secrets:
+
+Secret Name	Value
+AWS_ACCESS_KEY_ID	your-access-key
+AWS_SECRET_ACCESS_KEY	your-secret-key
+AWS_REGION	us-east-1
+CLUSTER_NAME	dev-eks
+Step 5 — Remove OIDC Configuration
+
+Remove from workflow:
+
+permissions:
+  id-token: write
+
+and remove:
+
+role-to-assume:
+Step 6 — Updated GitHub Workflow
+
+Use this workflow:
+
+name: Terraform Apply EKS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: self-hosted
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+
+    steps:
+
+      #########################################
+      # Checkout
+      #########################################
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      #########################################
+      # Configure AWS Credentials
+      #########################################
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      #########################################
+      # Verify Identity
+      #########################################
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      #########################################
+      # Terraform Init
+      #########################################
+      - name: Terraform Init
+        run: terraform init
+
+      #########################################
+      # Terraform Validate
+      #########################################
+      - name: Terraform Validate
+        run: terraform validate
+
+      #########################################
+      # Terraform Plan
+      #########################################
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="aws_region=${AWS_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}"
+
+      #########################################
+      # Terraform Apply
+      #########################################
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve \
+            -var="aws_region=${AWS_REGION}" \
+            -var="cluster_name=${CLUSTER_NAME}"
+
+      #########################################
+      # Update kubeconfig
+      #########################################
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${AWS_REGION} \
+            --name ${CLUSTER_NAME}
+
+      #########################################
+      # Verify Nodes
+      #########################################
+      - name: Verify Nodes
+        run: kubectl get nodes
 
