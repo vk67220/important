@@ -1601,7 +1601,8 @@ Step 5 - app_policy
 				"kms:DescribeKey",
 				"kms:CreateAlias",
 				"kms:EnableKeyRotation",
-				"kms:PutKeyPolicy"
+				"kms:PutKeyPolicy",
+				"kms:DeleteAlias"
 			],
 			"Resource": "*"
 		}
@@ -1609,16 +1610,23 @@ Step 5 - app_policy
 }
 Step 6 — Updated GitHub Workflow
 
-Use this workflow:
-
 name: Terraform Apply EKS
 
 on:
   workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Select environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
 
 jobs:
   terraform:
     runs-on: self-hosted
+    environment: ${{ inputs.target_env }}
 
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -1627,7 +1635,7 @@ jobs:
     steps:
 
       #########################################
-      # Checkout
+      # Checkout Repository
       #########################################
       - name: Checkout code
         uses: actions/checkout@v4
@@ -1643,10 +1651,17 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       #########################################
-      # Verify Identity
+      # Verify AWS Identity
       #########################################
       - name: Verify AWS Identity
-        run: aws sts get-caller-identity
+        run: |
+          aws sts get-caller-identity
+
+      #########################################
+      # Verify Terraform
+      #########################################
+      - name: Terraform Version
+        run: terraform version
 
       #########################################
       # Terraform Init
@@ -1688,8 +1703,20 @@ jobs:
             --name ${CLUSTER_NAME}
 
       #########################################
-      # Verify Nodes
+      # Verify EKS Nodes
       #########################################
       - name: Verify Nodes
         run: kubectl get nodes
+
+      #########################################
+      # Verify Cluster Status
+      #########################################
+      - name: Verify Cluster
+        run: |
+          aws eks describe-cluster \
+            --name ${CLUSTER_NAME} \
+            --query "cluster.status"
+
+
+Destroy:-
 
