@@ -1560,16 +1560,53 @@ AWS_ACCESS_KEY_ID	your-access-key
 AWS_SECRET_ACCESS_KEY	your-secret-key
 AWS_REGION	us-east-1
 CLUSTER_NAME	dev-eks
-Step 5 — Remove OIDC Configuration
 
-Remove from workflow:
+Step 5 - app_policy
 
-permissions:
-  id-token: write
-
-and remove:
-
-role-to-assume:
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "EKSClusterManagement",
+			"Effect": "Allow",
+			"Action": [
+				"eks:CreateCluster",
+				"eks:DescribeCluster",
+				"eks:DeleteCluster",
+				"eks:UpdateClusterConfig",
+				"eks:UpdateClusterVersion",
+				"eks:TagResource",
+				"eks:ListClusters",
+				"eks:CreateAccessEntry",
+				"eks:DeleteAccessEntry",
+				"eks:DescribeAccessEntry",
+				"eks:ListAccessEntries",
+				"eks:AssociateAccessPolicy",
+				"eks:DisassociateAccessPolicy",
+				"eks:ListAssociatedAccessPolicies",
+				"eks:CreateNodegroup",
+				"eks:DeleteNodegroup",
+				"eks:DescribeNodegroup",
+				"eks:UpdateNodegroupConfig",
+				"eks:UpdateNodegroupVersion"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "KMSPermissions",
+			"Effect": "Allow",
+			"Action": [
+				"kms:CreateKey",
+				"kms:TagResource",
+				"kms:DescribeKey",
+				"kms:CreateAlias",
+				"kms:EnableKeyRotation",
+				"kms:PutKeyPolicy"
+			],
+			"Resource": "*"
+		}
+	]
+}
 Step 6 — Updated GitHub Workflow
 
 Use this workflow:
