@@ -1873,3 +1873,35 @@ Add Sonar plugin in pom.xml:
 </build>
 
 
+
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.39.1/docker-compose-linux-x86_64" \
+-o /usr/local/bin/docker-compose
+
+Give permission:
+
+sudo chmod +x /usr/local/bin/docker-compose
+
+Verify:
+
+docker-compose version
+
+Expected:
+
+Docker Compose version v2.x.x
+
+
+or new then go below
+
+sudo apt update
+
+sudo apt install docker-compose-plugin -y
+
+
+#install trivy
+sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+sudo apt-get update
+sudo apt-get install trivy -y
+
+
