@@ -1809,3 +1809,67 @@ jobs:
       - name: Verify Cluster Deletion
         run: |
           aws eks list-clusters --region ${AWS_REGION}
+
+==========================================================================================================================
+Steps to work after eks creation completed 
+==========================================================================================================================
+aws eks update-kubeconfig --region us-east-1 --name eks-practice
+
+kubectl get nodes
+
+
+docker run -d --name sonarqube -p 9000:9000 sonarqube:lts-community
+
+Access Sonar
+-----------------------------------------------------------------------------------------
+http://<EC2-PUBLIC-IP>:9000
+
+Login:
+
+admin / admin
+
+STEP 2: GENERATE TOKEN
+
+In Sonar UI:
+
+   Administration → Security → Users → Tokens
+   Generate Token
+
+Example:
+
+SONAR_TOKEN = squ_xxxxxx
+
+STEP 3: ADD GITHUB SECRETS
+---------------------------------------------------------------------------------------------------------
+Go to your repo:
+
+  Settings → Secrets → Actions
+
+Add:
+
+SONAR_TOKEN = squ_xxxxxx
+SONAR_HOST_URL = http://<EC2-IP>:9000
+
+STEP 4: OPEN SECURITY GROUP
+----------------------------------------------------------------------------
+  AWS EC2 → Security Group
+
+Allow:
+
+Port 9000 → 0.0.0.0/0
+
+STEP 5: UPDATE YOUR PROJECT (IMPORTANT)
+
+Add Sonar plugin in pom.xml:
+
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.sonarsource.scanner.maven</groupId>
+      <artifactId>sonar-maven-plugin</artifactId>
+      <version>3.9.1.2184</version>
+    </plugin>
+  </plugins>
+</build>
+
+
