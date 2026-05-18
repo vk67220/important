@@ -1905,3 +1905,21 @@ sudo apt-get update
 sudo apt-get install trivy -y
 
 
+Install AWS CLI
+
+Run on EC2 runner server:
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+Install unzip if missing:
+
+sudo apt update
+sudo apt install unzip -y
+
+Unzip:
+
+unzip awscliv2.zip
+
+Install AWS CLI:
+
+sudo ./aws/install
