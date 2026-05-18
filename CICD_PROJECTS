@@ -1923,3 +1923,27 @@ unzip awscliv2.zip
 Install AWS CLI:
 
 sudo ./aws/install
+
+
+Install kubectl on Self-Hosted Runner
+
+Run on your EC2 server:
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+Give execute permission:
+
+chmod +x kubectl
+
+Move to system path:
+
+sudo mv kubectl /usr/local/bin/
+Verify Installation
+
+Run:
+
+kubectl version --client
+
+Expected:
+
+Client Version: v1.xx.x
