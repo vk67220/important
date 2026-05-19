@@ -1947,3 +1947,484 @@ kubectl version --client
 Expected:
 
 Client Version: v1.xx.x
+
+
+
+k8s using local plus dockerhub
+
+name: DevSecOps Pipeline (Docker Compose + EKS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Select Environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
+
+jobs:
+  devsecops:
+    runs-on: self-hosted
+
+    environment: ${{ inputs.target_env }}
+
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+
+    steps:
+
+      #########################################
+      # STEP 1 - Checkout Code
+      #########################################
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      #########################################
+      # STEP 2 - Setup Java
+      #########################################
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      #########################################
+      # STEP 3 - Configure AWS Credentials
+      #########################################
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      #########################################
+      # STEP 4 - Verify AWS Identity
+      #########################################
+      - name: Verify AWS Identity
+        run: |
+          aws sts get-caller-identity
+
+      #########################################
+      # STEP 5 - Debug Variables
+      #########################################
+      - name: Debug Variables
+        run: |
+          echo "AWS_REGION=${AWS_REGION}"
+          echo "CLUSTER_NAME=${CLUSTER_NAME}"
+          echo "TARGET_ENV=${{ inputs.target_env }}"
+
+      #########################################
+      # STEP 6 - Set Version
+      #########################################
+      - name: Set Version
+        run: |
+          VERSION=0.0.${GITHUB_RUN_NUMBER}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Application Version: $VERSION"
+
+      #########################################
+      # STEP 7 - Maven Build
+      #########################################
+      - name: Maven Build
+        run: |
+          mvn clean package -DskipTests
+
+      #########################################
+      # STEP 8 - SonarQube Scan
+      #########################################
+      - name: SonarQube Scan
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=employees \
+            -Dsonar.projectName=employees \
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.login=${SONAR_TOKEN} \
+            -Dsonar.qualitygate.wait=true
+
+      #########################################
+      # STEP 9 - Trivy FileSystem Scan
+      #########################################
+      - name: Trivy FileSystem Scan
+        run: |
+          trivy fs . > trivyfs-report.txt
+
+      #########################################
+      # STEP 10 - Build Docker Image
+      #########################################
+      - name: Build Docker Image
+        run: |
+          docker build -t employees-app:${VERSION} .
+          docker tag employees-app:${VERSION} employees-app:latest
+
+      #########################################
+      # STEP 11 - Trivy Docker Image Scan
+      #########################################
+      - name: Trivy Docker Image Scan
+        run: |
+          trivy image employees-app:${VERSION}
+
+      #########################################
+      # STEP 12 - DockerHub Login
+      #########################################
+      - name: DockerHub Login
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      #########################################
+      # STEP 13 - Tag Docker Image
+      #########################################
+      - name: Tag Docker Image
+        run: |
+          docker tag employees-app:${VERSION} $DOCKER_USERNAME/employees-app:${VERSION}
+          docker tag employees-app:${VERSION} $DOCKER_USERNAME/employees-app:latest
+
+      #########################################
+      # STEP 14 - Push Docker Image
+      #########################################
+      - name: Push Docker Image
+        run: |
+          docker push $DOCKER_USERNAME/employees-app:${VERSION}
+          docker push $DOCKER_USERNAME/employees-app:latest
+
+      #########################################
+      # STEP 15 - Local Docker Compose Deployment
+      #########################################
+      - name: Deploy Docker Compose
+        run: |
+          docker-compose down || true
+          docker-compose up -d
+
+      #########################################
+      # STEP 16 - Verify Local Containers
+      #########################################
+      - name: Verify Local Containers
+        run: |
+          docker ps
+
+      #########################################
+      # STEP 17 - Update kubeconfig
+      #########################################
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${AWS_REGION} \
+            --name ${CLUSTER_NAME}
+
+      #########################################
+      # STEP 18 - Verify Kubernetes Cluster
+      #########################################
+      - name: Verify Kubernetes Cluster
+        run: |
+          kubectl get nodes
+
+      #########################################
+      # STEP 19 - Deploy Kubernetes YAML Files
+      #########################################
+      - name: Deploy Kubernetes YAML Files
+        run: |
+
+          echo "Creating Namespace..."
+          kubectl apply -f k8s/namespace.yml
+
+          echo "Waiting for Namespace..."
+          sleep 10
+
+          echo "Deploying Remaining Kubernetes Resources..."
+
+          kubectl apply -f k8s/configmap.yml
+
+          kubectl apply -f k8s/secret.yml
+
+          kubectl apply -f k8s/storageclass.yml
+
+          kubectl apply -f k8s/headless_service.yml
+
+          kubectl apply -f k8s/postgres_service.yml
+
+          kubectl apply -f k8s/postgresql_statefulset_secret_config_volume.yml
+
+          kubectl apply -f k8s/app_deployment_config_secret.yml
+
+          kubectl apply -f k8s/app_service.yml
+
+      #########################################
+      # STEP 20 - Verify Kubernetes Rollout
+      #########################################
+      - name: Verify Kubernetes Rollout
+        run: |
+          kubectl rollout status deployment/employee-app -n vk67220-ns
+
+      #########################################
+      # STEP 21 - Verify Kubernetes Resources
+      #########################################
+      - name: Verify Kubernetes Resources
+        run: |
+          kubectl get all -n vk67220-ns
+          kubectl get pvc -n vk67220-ns
+          kubectl get sc -n vk67220-ns
+
+k8s using ECR
+
+name: DevSecOps Pipeline (Local + ECR Push + EKS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Select Environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
+
+jobs:
+  devsecops:
+    runs-on: self-hosted
+
+    environment: ${{ inputs.target_env }}
+
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+
+      ECR_REPO: employees-app-dev
+
+    steps:
+
+      #########################################
+      # STEP 1 - Checkout Code
+      #########################################
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      #########################################
+      # STEP 2 - Setup Java
+      #########################################
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      #########################################
+      # STEP 3 - Set Version
+      #########################################
+      - name: Set Version
+        run: |
+          VERSION=0.0.${GITHUB_RUN_NUMBER}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      #########################################
+      # STEP 4 - Maven Build
+      #########################################
+      - name: Build
+        run: |
+          mvn clean package -DskipTests
+
+      #########################################
+      # STEP 5 - SonarQube Scan
+      #########################################
+      - name: Sonar Scan
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=employees \
+            -Dsonar.projectName=employees \
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.login=${SONAR_TOKEN} \
+            -Dsonar.qualitygate.wait=true
+
+      #########################################
+      # STEP 6 - Trivy FileSystem Scan
+      #########################################
+      - name: Trivy FS Scan
+        run: |
+          trivy fs . > trivyfs.txt
+
+      #########################################
+      # STEP 7 - Build Docker Image
+      #########################################
+      - name: Build Docker Image
+        run: |
+          docker build -t employees-app:${VERSION} .
+
+          docker tag employees-app:${VERSION} employees-app:latest
+
+      #########################################
+      # STEP 8 - Trivy Docker Image Scan
+      #########################################
+      - name: Trivy Image Scan
+        run: |
+          trivy image employees-app:${VERSION}
+
+      #########################################
+      # STEP 9 - Configure AWS Credentials
+      #########################################
+      - name: Configure AWS Credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      #########################################
+      # STEP 10 - Verify AWS Identity
+      #########################################
+      - name: Verify AWS Identity
+        run: |
+          aws sts get-caller-identity
+
+      #########################################
+      # STEP 11 - Login to ECR
+      #########################################
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION \
+          | docker login \
+          --username AWS \
+          --password-stdin \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+      #########################################
+      # STEP 12 - Tag Image for ECR
+      #########################################
+      - name: Tag Image for ECR
+        run: |
+
+          docker tag employees-app:${VERSION} \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:${VERSION}
+
+          docker tag employees-app:${VERSION} \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
+
+      #########################################
+      # STEP 13 - Push Image to ECR
+      #########################################
+      - name: Push Image to ECR
+        run: |
+
+          docker push \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:${VERSION}
+
+          docker push \
+          $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
+
+      #########################################
+      # STEP 14 - Local Docker Compose Deploy
+      #########################################
+      - name: Deploy Containers
+        run: |
+
+          docker-compose down || true
+
+          docker-compose up -d
+
+      #########################################
+      # STEP 15 - Verify Local Containers
+      #########################################
+      - name: Verify Running Containers
+        run: |
+          docker ps
+
+      #########################################
+      # STEP 16 - Configure kubeconfig
+      #########################################
+      - name: Configure kubeconfig
+        run: |
+
+          aws eks update-kubeconfig \
+            --region ${AWS_REGION} \
+            --name ${CLUSTER_NAME}
+
+      #########################################
+      # STEP 17 - Verify EKS Cluster
+      #########################################
+      - name: Verify EKS Cluster
+        run: |
+
+          kubectl get nodes
+
+      #########################################
+      # STEP 18 - Deploy Kubernetes YAML Files
+      #########################################
+      - name: Deploy Kubernetes YAML Files
+        run: |
+
+          echo "Creating Namespace..."
+
+          kubectl apply -f k8s/namespace.yml
+
+          echo "Waiting for Namespace..."
+
+          sleep 10
+
+          echo "Deploying Kubernetes Resources..."
+
+          kubectl apply -f k8s/configmap.yml
+
+          kubectl apply -f k8s/secret.yml
+
+          kubectl apply -f k8s/storageclass.yml
+
+          kubectl apply -f k8s/headless_service.yml
+
+          kubectl apply -f k8s/postgres_service.yml
+
+          kubectl apply -f k8s/postgresql_statefulset_secret_config_volume.yml
+
+          kubectl apply -f k8s/app_deployment_config_secret.yml
+
+          kubectl apply -f k8s/app_service.yml
+
+      #########################################
+      # STEP 19 - Verify Kubernetes Resources
+      #########################################
+      - name: Verify Kubernetes Resources
+        run: |
+
+          kubectl get all -n vk67220-ns
+
+          kubectl get pvc -n vk67220-ns
+
+          kubectl get storageclass
+
+      #########################################
+      # STEP 20 - Verify Rollout
+      #########################################
+      - name: Verify Rollout
+        run: |
+
+          kubectl rollout status deployment/employee-app \
+          -n vk67220-ns
+
+      #########################################
+      # STEP 21 - Cleanup Docker Images
+      #########################################
+      - name: Cleanup Docker Images
+        run: |
+
+          docker image prune -a -f
+
