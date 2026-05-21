@@ -2428,3 +2428,79 @@ jobs:
 
           docker image prune -a -f
 
+===========================================================================================================================
+Helm chart
+===========================================================================================================================
+STEP 1 — INSTALL HELM ON RUNNER EC2(where yaml files present in that ec2 self hosted machine)
+
+curl -fsSL -o get_helm.sh \
+https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+
+chmod 700 get_helm.sh
+
+./get_helm.sh
+
+helm version
+
+STEP 1 — Open Project Folder
+
+springboot-thymeleaf-crud-pagination-sorting-webapp
+
+STEP 2 — CREATE HELM CHART
+
+mkdir helm
+
+cd helm
+
+helm create employee-app
+
+STEP 3 — REMOVE DEFAULT FILES
+
+rm -rf helm/employee-app/templates/*   ---- optional
+
+STEP 4 — Chart.yaml
+
+apiVersion: v2
+name: employee-app
+description: SpringBoot Employee Application
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+STEP 5 — values.yaml
+
+namespace: vk67220-ns
+
+replicaCount: 3
+
+image:
+  repository: 302524629943.dkr.ecr.us-east-1.amazonaws.com/employees-app-dev
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080
+
+postgres:
+  image: postgres:13
+  database: employees
+  username: postgres
+  password: root
+
+storage:
+  className: vk67220-storage-duplicate
+  size: 2Gi
+
+STEP 6 — namespace.yaml
+STEP 7 — storageclass.yaml
+STEP 8 — configmap.yaml
+
+
+
+
+
+
+
+
