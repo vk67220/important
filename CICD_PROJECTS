@@ -3068,6 +3068,174 @@ kubectl get hpa employee-app-hpa -n vk67220-ns -w
 kubectl get pods -n vk67220 -wkubectl exec -it employee-app-xxx -n vk67220-ns -- sh
 
 
+Auto scaling important points 
+
+1. METRICS SERVER IS MANDATORY
+
+Without Metrics Server:
+❌ HPA will NOT work.
+
+Install:
+
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+helm install metrics-server metrics-server/metrics-server -n kube-system
+VERIFY METRICS SERVER
+kubectl get apiservices | grep metrics
+
+Expected:
+
+v1beta1.metrics.k8s.io   True
+2. CPU REQUESTS ARE MANDATORY
+
+MOST IMPORTANT.
+
+Without:
+
+resources:
+  requests:
+    cpu:
+
+HPA shows:
+
+cpu: <unknown>
+
+and scaling fails.
+
+3. ALWAYS DEFINE requests AND limits
+
+Enterprise standard:
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+4. replicas SHOULD BE 1
+
+When using HPA:
+
+replicas: 1
+
+Because:
+
+HPA manages scaling automatically.
+5. HPA YAML IMPORTANT POINTS
+
+Enterprise HPA:
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: employee-app-hpa
+  namespace: vk67220-ns
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: employee-app
+
+  minReplicas: 1
+
+  maxReplicas: 5
+
+  metrics:
+    - type: Resource
+
+      resource:
+        name: cpu
+
+        target:
+          type: Utilization
+
+          averageUtilization: 50
+6. scaleTargetRef MUST MATCH DEPLOYMENT
+name: employee-app
+
+must match:
+
+kind: Deployment
+metadata:
+  name: employee-app
+7. HPA WORKS ON UTILIZATION %
+
+Formula:
+
+CPU Utilization=
+Requested CPU
+Actual CPU Usage
+	​
+
+×100
+
+Example:
+
+requested CPU = 200m
+actual usage = 400m
+
+Result:
+
+200%
+8. VERIFY HPA
+kubectl get hpa -n vk67220-ns
+
+Example:
+
+cpu: 120%/50%
+
+Meaning:
+
+current usage = 120%
+target = 50%
+scale up happening.
+9. VERIFY POD METRICS
+kubectl top pods -n vk67220-ns
+10. VERIFY NODE METRICS
+kubectl top nodes
+11. SCALE DOWN TAKES TIME
+
+Kubernetes uses:
+
+stabilization window.
+
+So:
+
+scale up fast
+scale down slowly.
+
+This is NORMAL.
+
+12. ENTERPRISE SCALE-DOWN CONFIGURATION
+
+Optional:
+
+behavior:
+  scaleDown:
+    stabilizationWindowSeconds: 60
+13. LOAD TESTING IMPORTANT
+
+Simple shell loop:
+
+while true; do :; done
+
+may not always generate enough CPU.
+
+Better:
+
+yes > /dev/null
+
+OR:
+
+stress-ng
+ApacheBench
+JMeter
+k6
+
+
 ===========================================================================================================================
                                                Ingress
 ===========================================================================================================================
@@ -3130,4 +3298,181 @@ curl -H "Host: app.metatechz.store" http://<LB-DNS>/api/v1/employees
 browser 
 http://app.metatechz.store/api/v1/employees/
 
+important points 
+
+1. SERVICE MUST BE ClusterIP
+
+When using Ingress:
+
+✅ Correct:
+
+type: ClusterIP
+
+❌ Wrong:
+
+type: LoadBalancer
+
+Because:
+
+Ingress Controller itself creates AWS ELB.
+2. ingressClassName IS IMPORTANT
+
+Modern Kubernetes uses:
+
+ingressClassName: nginx
+
+Avoid old annotation style:
+
+kubernetes.io/ingress.class: nginx
+3. TLS SECTION IS MANDATORY FOR HTTPS
+tls:
+  - hosts:
+      - app.metatechz.store
+
+    secretName: employee-app-tls
+
+This:
+
+enables HTTPS
+stores SSL certificate secret.
+4. cert-manager ANNOTATION REQUIRED
+annotations:
+  cert-manager.io/cluster-issuer: letsencrypt-prod
+
+Without this:
+❌ SSL certificate not generated.
+
+5. CORRECT HOSTNAME
+host: app.metatechz.store
+
+Must EXACTLY match:
+
+DNS record
+browser URL
+TLS certificate hostname.
+6. BACKEND SERVICE NAME MUST MATCH
+backend:
+  service:
+    name: employee-app-svc
+
+Must match actual Kubernetes Service.
+
+Verify:
+
+kubectl get svc -n vk67220-ns
+7. PORT MUST MATCH SERVICE PORT
+
+Ingress uses:
+
+port:
+  number: 80
+
+This should match:
+
+spec:
+  ports:
+    - port: 80
+
+inside Service YAML.
+
+NOT:
+
+containerPort.
+8. NAMESPACE MUST MATCH
+
+Ingress namespace:
+
+namespace: vk67220-ns
+
+must be SAME as:
+
+deployment
+service.
+9. DNS RECORD REQUIRED
+
+In Hostinger:
+
+Type	Name	Value
+CNAME	app	AWS ELB DNS
+
+Example:
+
+app.metatechz.store
+→
+a1b2c3d4.elb.amazonaws.com
+10. VERIFY ELB CREATED
+kubectl get svc -n ingress-nginx
+
+Expected:
+
+ingress-nginx-controller
+TYPE: LoadBalancer
+11. VERIFY CERTIFICATE
+kubectl get certificate -n vk67220-ns
+
+Expected:
+
+READY=True
+12. VERIFY INGRESS
+kubectl get ingress -n vk67220-ns
+13. IMPORTANT FINAL INGRESS YAML
+
+Enterprise production version:
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: employee-app-ingress
+  namespace: vk67220-ns
+
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+spec:
+  ingressClassName: nginx
+
+  tls:
+    - hosts:
+        - app.metatechz.store
+
+      secretName: employee-app-tls
+
+  rules:
+    - host: app.metatechz.store
+
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+
+            backend:
+              service:
+                name: employee-app-svc
+
+                port:
+                  number: 80
+14. IMPORTANT CLUSTER ISSUER YAML
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+
+metadata:
+  name: letsencrypt-prod
+
+spec:
+  acme:
+    email: yourmail@gmail.com
+
+    server: https://acme-v02.api.letsencrypt.org/directory
+
+    privateKeySecretRef:
+      name: letsencrypt-prod
+
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+
+
+SERVICE MUST BE ClusterIP
 
