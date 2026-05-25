@@ -3474,5 +3474,59 @@ spec:
             class: nginx
 
 
-SERVICE MUST BE ClusterIP
+===========================================================================================================================
+                                           ArgoCD
+===========================================================================================================================
+
+Step-1 Move all files to k8s folder
+
+app_deployment_config_secret.yml
+app_service.yml
+cluster-issuer.yml
+configmap.yml
+headless_service.yml
+hpa.yml
+ingress.yml
+namespace.yml
+postgresql_statefulset_secret_config_volume.yml
+postgres_service.yml
+secret.yml
+storageclass.yml
+
+
+STEP 2 — INSTALL HELM
+ON EC2:
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+Verify:
+helm version
+
+STEP 3 — INSTALL ARGOCD USING HELM
+Add repo:
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+
+STEP 4 - Create argocd directory
+
+mkdir argocd 
+
+In production, it is always suggested to create a custom namespace ----> kubectl create namespace argocd ----> Lets install argocd in the namespace 'argocd' ----> helm install argocd argo/argo-cd --namespace argocd ----> kubectl get all -n argocd ----> You will see multiple things which are running ----> Under 'services' you can see 'argo-cd server' and the type as ClusterIP. But to access outside of the cluster, we need Load Balancer. So lets edit this ClusterIP to LoadBalancer ----> For this i will use patch ----> 
+
+EXPOSE ARGOCD SERVER:
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}' ----> kubectl get all -n argocd ----> Now you can see the service called 'argo-cd server' changed to Load Balancer instead of ClusterIP ----> Copy the load balancer url ----> This is one way of getting the loadbalancer url. Another way is to install "jq" (J Query) ----> 
+
+yum install jq -y
+
+kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname'
+The above command will provide load balancer URL to access ARGO CD
+
+Access the argocd using teh above load balancer url ----> Username: admin, 
+
+TO GET ARGO CD PASSWORD:
+------------------------------------------
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+----> Copy the password and provide in argo cd console ----> You will see the argo cd console ----> Follow as explained in the video
+
 
