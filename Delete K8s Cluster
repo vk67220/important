@@ -1,0 +1,167 @@
+STEP 1 — DELETE APPLICATION NAMESPACE
+
+Delete ALL application resources:
+
+kubectl delete namespace vk67220-ns
+
+Verify:
+
+kubectl get ns
+
+Wait until:
+
+vk67220-ns
+
+disappears.
+
+STEP 2 — DELETE ARGOCD APPLICATION
+kubectl delete application employee-project -n argocd
+STEP 3 — DELETE ARGOCD
+
+If installed using Helm:
+
+helm uninstall argocd -n argocd
+
+Then:
+
+kubectl delete namespace argocd
+STEP 4 — DELETE INGRESS CONTROLLER
+
+VERY IMPORTANT.
+
+Otherwise AWS ELB billing continues.
+
+kubectl delete namespace ingress-nginx
+
+Verify:
+
+kubectl get svc -A
+
+No LoadBalancer services should remain.
+
+STEP 5 — DELETE CERT-MANAGER
+kubectl delete namespace cert-manager
+STEP 6 — DELETE METRICS SERVER
+helm uninstall metrics-server -n kube-system
+STEP 7 — VERIFY LOADBALANCERS REMOVED
+
+Go AWS Console:
+
+EC2 →
+Load Balancers.
+
+Ensure:
+❌ no ELBs remain.
+
+OR CLI:
+
+aws elbv2 describe-load-balancers
+STEP 8 — DELETE EKS NODEGROUP
+
+List nodegroups:
+
+aws eks list-nodegroups \
+--cluster-name <cluster-name> \
+--region us-east-1
+
+Delete:
+
+aws eks delete-nodegroup \
+--cluster-name <cluster-name> \
+--nodegroup-name <nodegroup-name> \
+--region us-east-1
+
+Wait until deleted.
+
+STEP 9 — DELETE EKS CLUSTER
+aws eks delete-cluster \
+--name <cluster-name> \
+--region us-east-1
+STEP 10 — VERIFY CLUSTER DELETED
+aws eks list-clusters --region us-east-1
+STEP 11 — DELETE EBS VOLUMES
+
+VERY IMPORTANT.
+
+EBS volumes often remain.
+
+AWS Console:
+EC2 →
+Volumes.
+
+Delete all:
+
+Available
+Kubernetes leftover volumes.
+
+OR CLI:
+
+aws ec2 describe-volumes
+
+Delete:
+
+aws ec2 delete-volume --volume-id vol-xxxxxxxx
+STEP 12 — DELETE ECR IMAGES
+
+List repositories:
+
+aws ecr describe-repositories
+
+Delete repository:
+
+aws ecr delete-repository \
+--repository-name employees-app-dev \
+--force
+STEP 13 — DELETE SECURITY GROUPS (OPTIONAL)
+
+Sometimes EKS leaves:
+
+SGs
+ENIs.
+
+Check AWS Console.
+
+STEP 14 — VERIFY BILLING RESOURCES
+
+Most important final checks:
+
+AWS Service	Must be Empty
+EC2	no worker nodes
+EKS	no cluster
+ELB	no load balancer
+EBS	no leftover volumes
+ECR	optional
+NAT Gateway	delete if exists
+MOST IMPORTANT BILLING RESOURCES
+
+These cost the MOST:
+
+Resource	Billing
+NAT Gateway	VERY expensive
+LoadBalancer	hourly
+EBS	monthly
+EC2 nodes	hourly
+Elastic IP	if unattached
+VERIFY NAT GATEWAY
+
+Go:
+VPC →
+NAT Gateways.
+
+Delete if exists.
+
+VERY IMPORTANT.
+
+FINAL AWS CLEANUP CHECKLIST
+
+✅ Namespace deleted
+✅ ArgoCD deleted
+✅ ingress-nginx deleted
+✅ cert-manager deleted
+✅ metrics-server deleted
+✅ ELBs deleted
+✅ nodegroups deleted
+✅ EKS cluster deleted
+✅ EBS volumes deleted
+✅ NAT gateways deleted
+✅ ECR cleaned.
