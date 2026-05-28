@@ -3599,12 +3599,21 @@ name: Platform Services Installation
 
 on:
   workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Select environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
 
 jobs:
 
   platform-installation:
 
     runs-on: self-hosted
+    environment: ${{ inputs.target_env }}
 
     env:
 
@@ -3636,6 +3645,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
           aws-region: ${{ secrets.AWS_REGION }}
+
+        #########################################################
+        # STEP 3 - VERIFY AWS IDENTITY
+        ##########################################################
+ 
+      - name: Verify AWS Identity
+        run: |
+
+          aws sts get-caller-identity
 
       #########################################################
       # STEP 3 - CONFIGURE KUBECONFIG
@@ -3880,7 +3898,6 @@ jobs:
         run: |
 
           kubectl get pods -A
-
 
 
 STEP 1 — INSTALL MONITORING STACK
