@@ -3936,6 +3936,55 @@ kubectl get secret monitoring-grafana \
 -o jsonpath="{.data.admin-password}" \
 | base64 -d
 
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: prometheus-ingress
+  namespace: monitoring
+
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+spec:
+  ingressClassName: nginx
+
+  tls:
+    - hosts:
+        - prometheus.metatechz.store
+
+      secretName: prometheus-tls
+
+  rules:
+    - host: prometheus.metatechz.store
+
+      http:
+        paths:
+          - path: /
+
+            pathType: Prefix
+
+            backend:
+              service:
+                name: monitoring-kube-prometheus-prometheus
+
+                port:
+                  number: 9090
+
+
+kubectl apply -f prometheus-ingress.yml
+
+kubectl patch svc monitoring-kube-prometheus-prometheus \
+-n monitoring \
+-p '{"spec":{"type":"LoadBalancer"}}'
+
+
+
+
+
+
 STEP 3 — INSTALL LOGGING STACK (REAL-TIME)
 Most companies install:
 Loki
