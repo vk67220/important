@@ -1,0 +1,246 @@
+Installing Kube-Prometheus-Stack Helm Chart
+This helm chart comes with Kube-state metrics, Alert Manager ,Node-Exporter and Even Grafana, so we don't need to Install, Configure Data Source or Import Dashboard for Grafana, this will be completely taken care of this helm chart
+
+Even if a new pod is created, You can visually watch it in Grafana Dashboard, this chart makes most of our complex configuration easier and is widely used
+
+You can install it officially from Helm Charts with same Helm Community - Kube-Prometheus-Stack Helm Chart
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+Copy
+helm repo update
+Copy
+Since we have monitoring namespace already created as part of our previous session, let us use the same namespace, if you have not created namespace,you can create with below command
+kubectl create ns monitoring
+Copy
+Now, run the below command to install kube-prometheus-stack Helm Chart
+helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+Copy
+
+kube-stack-prometheus helm chart installation
+
+Now, Verify pods status
+Prometheus and Grafana Pods after helm install
+
+As you can see, it even has Grafana Pods
+
+Access Prometheus and Grafana Server
+By default, All our pod data, node data ,metrics will be pulled by Prometheus and Grafana, let us check services and change both Prometheus Service and Grafana Service to NodePort so that we can access
+
+kubectl get svc -n monitoring
+Copy
+
+Prometheus and Grafana service before NodePort
+
+As per above screenshot, Prometheus-Grafana is the Grafana server and Prometheus-kube-Prometheus-Prometheus is Prometheus server, let us expose both these services to NodePort
+kubectl edit svc prometheus-grafana -n monitoring
+Copy
+
+Grafana NodePort Change
+
+kubectl edit svc prometheus-kube-prometheus-prometheus -n monitoring
+Copy
+
+Prometheus NodePort Change
+
+
+change type from ClusterIp to NodePort in both the services 
+
+Now check the services
+kubectl get svc -n monitoring
+Copy
+
+Prometheus and Grafana service after updating NodePort
+
+According to above screenshot, Prometheus is accessible at NodePort 31708 and Grafana is accessible at NodePort 30412
+
+Prometheus 
+
+
+
+Grafana
+
+Grafana first login page
+
+Grafana login password
+Now we know that username for Grafana is admin by default and we need to get Password from Secrets
+
+kubectl get secrets -n monitoring
+Copy
+
+Get secrets for Grafana login
+
+As you can see there is secret called prometheus grafana from above screenshot, let us decode the admin password with below command
+kubectl get secret prometheus-grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 --decode
+Copy
+Grafana Password after decode
+
+As you can see from above screenshot, password is prom-operator, let us login
+
+
+
+
+
+Configuring Prometheus Data Source and Dashboard in Grafana
+With this chart, you don't need to configure prometheus data source or even Dashboards, as these are configured already by default while deploying the helm chart making our work easier
+
+if you go for Home> Connections > Data Sources, you will be able to find data sources already configured
+
+Pre-Configured Data Sources for Grafana
+
+Now Home> Dashboards
+
+Grafana-Pre configured Dashboards
+
+You will be able to find lot of dashboard pre-configured which makes our job lot easier
+
+Grafana configured dashboard for namespace
+
+As seen from above screenshot, this dashboard even makes our job easier to find metrics for particular pod in particular namespace
+
+Creating a Test Pod to Verify Prometheus Data Scraping in Grafana
+let us create a test pod to see if prometheus is able to scrape data for us and we can visualize the same in Grafana
+
+Create a new namespace called Test
+kubectl create ns test
+Copy
+
+Creating Kubernetes Test NameSpace
+
+Now let us create a sample nginx pod in this namespace
+kubectl run nginx-pod --image=nginx -n test
+Copy
+
+Deploying Test Pod
+
+Verify if the pod is running
+kubectl get pods -n test
+Copy
+
+Kubernetes Test Pod running Status
+
+Now for Prometheus server must be restarted, since our Prometheus server is running in Deployment, we can delete the prometheus pod and Grafana pod for changes to take affect
+kubectl delete pods prometheus-grafana-7f85d795b8-6hbpp prometheus-prometheus-kube-prometheus-prometheus-0 -n monitoring
+Copy
+Restarting Prometheus Kubernetes Pod
+
+wait for pods to be up, once pods are up, refresh Grafana app in your browser
+
+Go for Home> Dashboards > Kubernetes / Compute Resources / Pod 
+
+select the newly created NameSpace in filter
+
+kubernetes test pod namespace
+
+Scroll down and you will be able to find that metrics is being extracted
+
+kubernetes test pod metrics
+
+This shows that metrics are easily fetched from newly created Pod 
+Scrape Configs using Kubernetes ServiceMonitor CRD
+In case, we have our metrics api path or port in different part of our application, it is not suggested to update values.yaml file like we did in our previous session
+
+Most common used method is to create Kubernetes Custom Resource Definition for Service Monitor
+
+This helm chart comes even with few CRD's which makes our work easier, lets say, you have Metrics Path at port 9113 and you have named port as Metrics
+
+We will update our service file to access this port like as shown below
+
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: react-chart
+    meta.helm.sh/release-namespace: default
+  name: react-chart
+  namespace: react-nginx
+  labels:
+    app: test
+    app.kubernetes.io/instance: react-chart
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: react-chart
+    app.kubernetes.io/version: 1.16.0
+    helm.sh/chart: react-chart-0.1.0
+    job: monitor
+spec:
+  selector:
+    app.kubernetes.io/instance: react-chart
+    app.kubernetes.io/name: react-chart
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: metrics
+      port: 9113
+      protocol: TCP
+      targetPort: 9113   
+Copy
+
+You can find the deployment file for above Service file in our previous session or at this Github Profile - Prometheus Practise Github
+
+Here on the above service file, we have added metrics port, also two labels one is app: test and other is Job: monitor
+
+Now,before creating servicemonitor crd, you can verify crd present by simple command
+kubectl get crd
+Copy
+kubectl get crd
+
+
+You should be able to find servicemonitors.monitoring.coreos.com, now let us create our crd as shown below
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: react-chart-servicemonitor
+  namespace: react-nginx  # Replace with the namespace where your service is deployed
+  labels:
+    release: prometheus
+    app: prometheus
+spec:
+  jobLabel: monitor
+  selector:
+    matchLabels:
+      app: test  # Match the service label
+  # Replace with the namespace where your service is deployed
+  endpoints:
+    - port: metrics        # The port where the metrics are exposed
+      path: /metrics       # The path to scrape metrics
+      interval: 30s 
+Copy
+
+As you see from above yaml, we have used kind: ServiceMonitor, and matchLables as app:test, as this is the one specified in our service file ,also jobLabel: monitor as we specified job:monitor in our service, These labels connect our Service file to this ServiceMonitor, also one label release:prometheus, this connects to Prometheus server, as we used release-name as Prometheus for our Helm Chart
+
+In summary, release label connects our ServiceMonitor to Prometheus Server and app,JobLabel connects our ServiceMonitor to our Application
+
+ServiceMonitor must be deployed in the same namespace of our application
+
+save the servicemonitor yaml file servicemonitor.yaml
+
+let us deploy our servicemonitor
+kubectl apply -f servicemonitor.yaml
+Copy
+kubernetes servicemonitor crd for prometheus
+
+Now let us verify our servicemonitor, since our kind is servicemonitor, our command updates this way
+kubectl get servicemonitor -n react-nginx
+Copy
+kubernetes servicemonitor crd
+
+Now we need to restart prometheus pod for changes to take place
+kubectl delete pod prometheus-prometheus-kube-prometheus-prometheus-0 -n monitoring
+Copy
+Prometheus Pod restart
+
+Once the pod is up, refresh the browser in where we have accessed Prometheus
+
+As you can see from below screenshot, Service Discovery was able to get the react-chart service monitor that we created
+
+Prometheus Service Discovery file
+
+Now let us check Targets
+
+Status> Targets
+
+and search for react-chart-servicemonitor
+
+
+
+This shows we have successfully configured our application to get Metrics path using Kubernetes CRD
