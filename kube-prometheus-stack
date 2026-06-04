@@ -244,3 +244,463 @@ and search for react-chart-servicemonitor
 
 
 This shows we have successfully configured our application to get Metrics path using Kubernetes CRD
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Based on the reference document you uploaded, the real learning/manual process is slightly different from the enterprise GitOps process. The document follows:
+
+EKS
+↓
+kube-prometheus-stack
+↓
+Grafana
+↓
+Prometheus
+↓
+Verify Cluster Metrics
+↓
+Create Test Pod
+↓
+Verify Metrics Collection
+↓
+Deploy Application
+↓
+Enable Actuator
+↓
+Create ServiceMonitor
+↓
+Verify Target
+↓
+Create Alerts
+
+COMPLETE DIRECTORY STRUCTURE FOR YOUR EMPLOYEE-APP PROJECT
+
+For manual learning, create:
+
+springboot-thymeleaf-crud-pagination-sorting-webapp
+│
+├── k8s
+│   ├── deployment.yml
+│   ├── service.yml
+│   ├── ingress.yml
+│
+├── monitoring
+│   ├── employee-app-monitor.yml
+│   ├── high-cpu-alert.yml
+│   ├── high-memory-alert.yml
+│   ├── app-down-alert.yml
+│   └── pod-restart-alert.yml
+│
+├── src
+├── pom.xml
+└── application.properties
+PHASE 1 — INSTALL KUBE-PROMETHEUS-STACK
+
+Create namespace:
+
+kubectl create ns monitoring
+
+Add repo:
+
+helm repo add prometheus-community \
+https://prometheus-community.github.io/helm-charts
+
+helm repo update
+
+Install:
+
+helm install prometheus \
+prometheus-community/kube-prometheus-stack \
+-n monitoring
+
+Verify:
+
+kubectl get pods -n monitoring
+
+You should see:
+
+prometheus-grafana
+prometheus-kube-prometheus-prometheus
+prometheus-kube-state-metrics
+prometheus-prometheus-node-exporter
+alertmanager
+
+PHASE 2 — ACCESSING GRAFANA & PROMETHEUS USING NODEPORT
+
+The reference document first uses NodePort access.
+
+Check services:
+
+kubectl get svc -n monitoring
+
+Edit Grafana:
+
+kubectl edit svc prometheus-grafana -n monitoring
+
+Change:
+
+type: ClusterIP
+
+to
+
+type: NodePort
+
+Edit Prometheus:
+
+kubectl edit svc prometheus-kube-prometheus-prometheus -n monitoring
+
+Change:
+
+type: ClusterIP
+
+to
+
+type: NodePort
+
+Verify:
+
+kubectl get svc -n monitoring
+
+Example:
+
+prometheus-grafana                          NodePort
+prometheus-kube-prometheus-prometheus       NodePort
+
+Access:
+
+http://<EC2-PUBLIC-IP>:<Grafana-NodePort>
+http://<EC2-PUBLIC-IP>:<Prometheus-NodePort>
+
+PHASE 3 — ACCESSING USING INGRESS (REAL PRODUCTION WAY)
+
+Most companies use:
+
+Internet
+↓
+DNS
+↓
+Ingress NGINX
+↓
+Grafana
+
+Create DNS:
+
+grafana.metatechz.store
+prometheus.metatechz.store
+
+Point both to:
+
+Ingress ELB
+grafana-ingress.yml
+
+Create:
+
+monitoring/grafana-ingress.yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: grafana-ingress
+  namespace: monitoring
+
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+spec:
+  ingressClassName: nginx
+
+  tls:
+    - hosts:
+        - grafana.metatechz.store
+      secretName: grafana-tls
+
+  rules:
+    - host: grafana.metatechz.store
+
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+
+            backend:
+              service:
+                name: prometheus-grafana
+
+                port:
+                  number: 80
+
+Apply:
+
+kubectl apply -f grafana-ingress.yml
+prometheus-ingress.yml
+
+Create:
+
+monitoring/prometheus-ingress.yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: prometheus-ingress
+  namespace: monitoring
+
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+spec:
+  ingressClassName: nginx
+
+  tls:
+    - hosts:
+        - prometheus.metatechz.store
+      secretName: prometheus-tls
+
+  rules:
+    - host: prometheus.metatechz.store
+
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+
+            backend:
+              service:
+                name: prometheus-kube-prometheus-prometheus
+
+                port:
+                  number: 9090
+
+Apply:
+
+kubectl apply -f prometheus-ingress.yml
+PHASE 4 — GRAFANA LOGIN
+
+Get password:
+
+kubectl get secret prometheus-grafana \
+-n monitoring \
+-o jsonpath="{.data.admin-password}" \
+| base64 --decode
+
+Username:
+
+admin
+
+PHASE 5 — VERIFY PRECONFIGURED DASHBOARDS
+
+According to the document:
+
+No datasource configuration needed.
+No dashboard configuration needed.
+
+kube-prometheus-stack already creates them.
+
+Navigate:
+
+Home
+↓
+Dashboards
+PHASE 6 — CREATE TEST POD
+kubectl create ns test
+
+kubectl run nginx-pod \
+--image=nginx \
+-n test
+
+Verify:
+
+kubectl get pods -n test
+
+PHASE 7 — VERIFY METRICS COLLECTION
+
+Grafana:
+
+Dashboards
+↓
+Kubernetes / Compute Resources / Pod
+
+Filter:
+
+Namespace = test
+
+Verify:
+
+nginx-pod
+
+metrics visible.
+
+PHASE 8 — DEPLOY EMPLOYEE APP
+
+Create:
+
+k8s/deployment.yml
+k8s/service.yml
+k8s/ingress.yml
+
+Apply:
+
+kubectl apply -f k8s/
+PHASE 9 — ENABLE SPRINGBOOT METRICS
+
+pom.xml
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+
+application.properties
+
+management.endpoints.web.exposure.include=*
+management.endpoint.prometheus.enabled=true
+management.metrics.export.prometheus.enabled=true
+PHASE 10 — VERIFY ACTUATOR
+
+Open:
+
+https://app.metatechz.store/actuator/prometheus
+
+Expected:
+
+jvm_memory_used_bytes
+process_cpu_usage
+http_server_requests_seconds
+PHASE 11 — UPDATE EMPLOYEE SERVICE
+
+Your service must have labels.
+
+Example:
+
+metadata:
+  labels:
+    app: employee-app
+    job: monitor
+
+And service:
+
+ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+
+The document explains that labels are used by ServiceMonitor to discover the service.
+
+PHASE 12 — VERIFY CRD
+kubectl get crd | grep servicemonitor
+
+Expected:
+
+servicemonitors.monitoring.coreos.com
+
+PHASE 13 — CREATE SERVICEMONITOR
+
+Create:
+
+monitoring/employee-app-monitor.yml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+
+metadata:
+  name: employee-app-monitor
+  namespace: vk67220-ns
+
+  labels:
+    release: prometheus
+    app: prometheus
+
+spec:
+  jobLabel: monitor
+
+  selector:
+    matchLabels:
+      app: employee-app
+
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+
+The document explains:
+
+release: prometheus
+
+connects ServiceMonitor to Prometheus.
+
+app: employee-app
+jobLabel: monitor
+
+connect ServiceMonitor to your Service.
+
+Apply:
+
+kubectl apply -f monitoring/employee-app-monitor.yml
+PHASE 14 — VERIFY SERVICEMONITOR
+kubectl get servicemonitor -A
+
+Expected:
+
+employee-app-monitor
+PHASE 15 — VERIFY TARGET
+
+Prometheus:
+
+Status
+↓
+Service Discovery
+
+Search:
+
+employee-app-monitor
+
+Then:
+
+Status
+↓
+Targets
+
+Expected:
+
+employee-app-monitor
+UP
+
+PHASE 16 — ALERTS
+
+Create:
+
+monitoring/
+├── high-cpu-alert.yml
+├── high-memory-alert.yml
+├── app-down-alert.yml
+└── pod-restart-alert.yml
+
+Apply:
+
+kubectl apply -f monitoring/high-cpu-alert.yml
+kubectl apply -f monitoring/high-memory-alert.yml
+
+This is the complete manual monitoring setup based on your reference document, with both NodePort access (learning/lab method) and Ingress + TLS access (production method), plus the exact manifest files you should create and where they should be placed.
