@@ -3999,3 +3999,10 @@ helm install loki grafana/loki-stack \
 STEP 4 — INSTALL TEMPO (TRACING)
 helm install tempo grafana/tempo \
 -n monitoring
+
+
+==========================================================================================================================
+1)install eks cluster
+2)install ebs-csi
+3)install platform infra
+4)apply k8s yml files
