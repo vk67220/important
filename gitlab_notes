@@ -1,0 +1,163 @@
+gitlab cicd package registry 
+
+1)create an file settings.xml
+
+REPLACE_WITH_NAME:-  
+REPLACE_WITH_TOKEN:-
+
+<settings>
+  <servers>
+    <server>
+      <id>gitlab-maven</id>
+      <configuration>
+        <httpHeaders>
+          <property>
+            <name>Private-Token</name>
+            <value>glpat-phyN-6q2CECWOQinTid-EWM6MQpvOjEKdTpuODh0MA8.01.171127yd1</value>
+          </property>
+        </httpHeaders>
+      </configuration>
+    </server>
+  </servers>
+</settings>
+
+2.create personal access token
+
+click on profile and edit profile 
+click on access token
+click on generate token
+
+Generate legacy token
+Legacy personal access tokens are scoped to all groups and projects with broad permissions to resources.
+Token name
+tools-token
+Description (optional)
+Expiration date
+2026-07-22
+An administrator has set the maximum expiration date to 2027-06-22.
+Select scopes
+Scopes set the permission levels granted to the token. Learn more.
+read_user
+Grants read-only access to your profile through the /user API endpoint, which includes username, public email, and full name. Also grants access to read-only API endpoints under /users.
+
+read_repository
+Grants read-only access to repositories on private projects using Git-over-HTTP or the Repository Files API.
+
+read_virtual_registry
+Grants read-only access to container images through the dependency proxy in private projects and virtual registries.
+
+read_registry
+Grants read-only access to container registry images on private projects.
+
+read_api
+Grants read access to the API, including all groups and projects, the container registry, and the package registry.
+
+self_rotate
+Grants permission for token to rotate itself.
+
+write_repository
+Grants read-write access to repositories on private projects using Git-over-HTTP (not using the API).
+
+write_virtual_registry
+Grants read, write, and delete access to container images through the dependency proxy in private projects.
+
+write_registry
+Grants write access to container registry images on private projects. You need both read and write access to push images.
+
+api
+Grants complete read/write access to the API, including all groups and projects, the container registry, the dependency proxy, and the package registry.
+
+ai_features
+Grants access to GitLab Duo related API endpoints.
+
+create_runner
+Grants create access to the runners.
+
+manage_runner
+Grants access to manage the runners.
+
+k8s_proxy
+Grants permission to perform Kubernetes API calls using the agent for Kubernetes.
+
+
+
+Step2 :in pom.xml paste below script
+
+<repositories>
+  <repository>
+    <id>gitlab-maven</id>
+    <url>https://gitlab.com/api/v4/projects/${project_id}/packages/maven</url>
+  </repository>
+</repositories>
+<distributionManagement>
+  <repository>
+    <id>gitlab-maven</id>
+    <url>https://gitlab.com/api/v4/projects/${project_id}/packages/maven</url>   
+  </repository>
+  <snapshotRepository>
+    <id>gitlab-maven</id>
+    <url>https://gitlab.com/api/v4/projects/${project_id}/packages/maven</url>
+  </snapshotRepository>
+</distributionManagement>
+
+create a variable for project_id
+
+click on settings 
+click on cicd
+click on variables
+click on add variable
+click on visiblity is visible
+click on uncheck protect
+Give key project_id
+value-----click on general and copy id value
+paste it
+clcik on add variable
+
+
+   <url>https://gitlab.example.com/api/v4/projects/${project_id}/packages/maven</url>     ----- if dns avaiable replace example with company dns 
+
+
+stages:
+    - maven-build
+    - maven-test
+    - package-deploy
+ 
+maven-compile:
+    when: manual
+    stage: maven-build
+    tags:
+       - tool
+       - ec2
+       - test
+    script:
+       - mvn clean install 
+maven-test:
+    when: manual
+    stage: maven-test
+    tags:
+       - tool
+    script:
+        - mvn test
+    artifacts:
+        reports:
+            junit:
+                - target/surefire-reports/*.xml
+        paths:
+            - target/surefire-reports/
+        untracked: false
+        when: on_success
+        access: all
+        expire_in: 30 days
+maven-package:
+    when: manual
+    stage: package-deploy
+    tags:
+       - tool
+    script:
+        - mvn deploy -s settings.xml
+
+
+click on deploy ---- package registry ---- 
+
+
+
