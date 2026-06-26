@@ -160,4 +160,180 @@ maven-package:
 click on deploy ---- package registry ---- 
 
 
+SAST:- static application security testing
+is used to detecting security vulnerabilities in source code 
+
+for executor:shell then use below script 
+
+stages:
+  - build
+  - test
+  - sast-stage
+  - sonar-stage
+  - docker-build-aws-ecr-push
+
+variables:
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+# -----------------------------
+# Build WAR
+# -----------------------------
+maven-build:
+  stage: build
+  image: maven:3.9.9-eclipse-temurin-17
+  tags:
+    - tool
+    - ec2
+    - test
+  script:
+    - mvn clean package
+    - ls -ltr target
+  artifacts:
+    paths:
+      - target/*.war
+    expire_in: 30 days
+
+# -----------------------------
+# Run Unit Tests
+# -----------------------------
+maven-test:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-17
+  tags:
+    - tool
+  needs:
+    - job: maven-build
+      artifacts: true
+  script:
+    - mvn test
+  artifacts:
+    reports:
+      junit:
+        - target/surefire-reports/*.xml
+    paths:
+      - target/*.war
+      - target/surefire-reports/
+    expire_in: 30 days
+
+
+# -----------------------------
+# Semgrep SAST Scan
+# -----------------------------
+semgrep-sast:
+  stage: sast-stage
+
+  tags:
+    - tool
+
+  needs:
+    - job: maven-test
+      artifacts: true
+
+  before_script:
+    - semgrep --version
+
+  script:
+    - mkdir -p reports
+
+    - echo "Starting Semgrep Scan..."
+
+    - semgrep scan --config auto --json --output reports/semgrep-report.json .
+
+    - semgrep scan --config auto --sarif --output reports/semgrep-report.sarif .
+
+    - echo "Semgrep Scan Completed"
+
+  artifacts:
+    name: semgrep-security-report
+
+    paths:
+      - reports/
+
+    when: always
+
+    expire_in: 30 days
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# -----------------------------
+# SonarQube Scan
+# -----------------------------
+sonarqube-check:
+  image: maven:3.9.9-eclipse-temurin-17
+  stage: sonar-stage
+  tags:
+    - tool
+  needs:
+    - job: maven-test
+      artifacts: true
+    - job: semgrep-sast
+    
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+
+  script:
+    - >
+      mvn verify sonar:sonar
+      -Dsonar.projectKey=devopsworking2_GitLab-Shell-Java-project-Source-Code_AZ793DifSdwBVIRVdkd5
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.token=$SONAR_TOKEN
+
+  allow_failure: false
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# -----------------------------
+# Docker Build & Push to Amazon ECR
+# -----------------------------
+docker-build-push:
+  stage: docker-build-aws-ecr-push
+  tags:
+    - tool
+
+  needs:
+    - job: maven-test
+      artifacts: true
+    - job: sonarqube-check
+
+  before_script:
+    - aws --version
+    - docker --version
+
+  script:
+    - aws sts get-caller-identity
+
+    - ls -ltr target
+
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+    - docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+
+    - docker tag $ECR_REPOSITORY:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - docker tag $ECR_REPOSITORY:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest
+
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY:latest
+
+    - aws ecr list-images --repository-name $ECR_REPOSITORY
+
+    - docker logout $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+for executor: docker then do this script
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
 
