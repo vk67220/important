@@ -337,3 +337,400 @@ include:
   - template: Jobs/SAST.gitlab-ci.yml
 
 
+
+
+
+Destroy EKS 
+
+stages:
+  - terraform-init
+  - terraform-validate
+  - terraform-destroy-plan
+  - terraform-destroy
+  - verify-destroy
+
+variables:
+  TF_IN_AUTOMATION: "true"
+
+# ---------------------------------------
+# Terraform Init
+# ---------------------------------------
+terraform-init:
+  stage: terraform-init
+
+  tags:
+    - terraform
+
+  before_script:
+
+    # Verify tools
+    - terraform version
+    - aws --version
+    - kubectl version --client
+
+    # Configure AWS CLI
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    # Select Environment
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      elif [ "$TARGET_ENV" = "production" ]; then
+        export CLUSTER_NAME="eks-prod"
+      else
+        echo "ERROR: TARGET_ENV must be 'dev' or 'production'"
+        exit 1
+      fi
+
+      echo "======================================="
+      echo "Environment  : $TARGET_ENV"
+      echo "Cluster Name : $CLUSTER_NAME"
+      echo "AWS Region   : $AWS_REGION"
+      echo "======================================="
+
+  script:
+    - aws sts get-caller-identity
+    - terraform init
+
+# ---------------------------------------
+# Terraform Validate
+# ---------------------------------------
+terraform-validate:
+  stage: terraform-validate
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-init
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+    - terraform init
+    - terraform validate
+
+# ---------------------------------------
+# Terraform Destroy Plan
+# ---------------------------------------
+terraform-destroy-plan:
+  stage: terraform-destroy-plan
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-validate
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+
+    - terraform init
+
+    - |
+      terraform plan -destroy \
+      -var="aws_region=$AWS_REGION" \
+      -var="cluster_name=$CLUSTER_NAME"
+
+# ---------------------------------------
+# Terraform Destroy
+# ---------------------------------------
+terraform-destroy:
+  stage: terraform-destroy
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-destroy-plan
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+
+    - terraform init
+
+    - |
+      terraform destroy -auto-approve \
+      -var="aws_region=$AWS_REGION" \
+      -var="cluster_name=$CLUSTER_NAME"
+
+  when: manual
+
+  only:
+    - main
+
+# ---------------------------------------
+# Verify Cluster Deletion
+# ---------------------------------------
+verify-destroy:
+  stage: verify-destroy
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-destroy
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+
+    - echo "Remaining EKS Clusters"
+
+    - aws eks list-clusters --region "$AWS_REGION"
+
+  only:
+    - main
+
+Apply EKS
+
+stages:
+  - terraform-init
+  - terraform-validate
+  - terraform-plan
+  - terraform-apply
+  - verify-eks
+
+variables:
+  TF_IN_AUTOMATION: "true"
+
+# ---------------------------------------
+# Terraform Init
+# ---------------------------------------
+terraform-init:
+  stage: terraform-init
+
+  tags:
+    - terraform
+
+  before_script:
+
+    # Verify tools
+    - terraform version
+    - aws --version
+    - kubectl version --client
+
+    # Configure AWS CLI
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    # Select Environment
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      elif [ "$TARGET_ENV" = "production" ]; then
+        export CLUSTER_NAME="eks-prod"
+      else
+        echo "ERROR: TARGET_ENV must be 'dev' or 'production'"
+        exit 1
+      fi
+
+      echo "===================================="
+      echo "Environment  : $TARGET_ENV"
+      echo "Cluster Name : $CLUSTER_NAME"
+      echo "AWS Region   : $AWS_REGION"
+      echo "===================================="
+
+  script:
+
+    - echo "===== AWS Identity ====="
+    - aws sts get-caller-identity
+
+    - echo "===== Terraform Init ====="
+    - terraform init
+
+# ---------------------------------------
+# Terraform Validate
+# ---------------------------------------
+terraform-validate:
+  stage: terraform-validate
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-init
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+    - terraform init
+    - terraform validate
+
+# ---------------------------------------
+# Terraform Plan
+# ---------------------------------------
+terraform-plan:
+  stage: terraform-plan
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-validate
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+    - terraform init
+
+    - |
+      terraform plan \
+      -var="aws_region=$AWS_REGION" \
+      -var="cluster_name=$CLUSTER_NAME"
+
+# ---------------------------------------
+# Terraform Apply
+# ---------------------------------------
+terraform-apply:
+  stage: terraform-apply
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-plan
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+    - terraform init
+    - |
+      terraform apply -auto-approve \
+      -var="aws_region=$AWS_REGION" \
+      -var="cluster_name=$CLUSTER_NAME"
+
+  when: manual
+
+  only:
+    - main
+
+# ---------------------------------------
+# Verify EKS Cluster
+# ---------------------------------------
+verify-eks:
+  stage: verify-eks
+
+  tags:
+    - terraform
+
+  needs:
+    - terraform-apply
+
+  before_script:
+
+    - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    - aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    - aws configure set default.region "$AWS_REGION"
+
+    - |
+      if [ "$TARGET_ENV" = "dev" ]; then
+        export CLUSTER_NAME="eks-dev"
+      else
+        export CLUSTER_NAME="eks-prod"
+      fi
+
+  script:
+
+    - echo "===== Update kubeconfig ====="
+
+    - |
+      aws eks update-kubeconfig \
+      --region "$AWS_REGION" \
+      --name "$CLUSTER_NAME"
+
+    - echo "===== EKS Nodes ====="
+
+    - kubectl get nodes
+
+    - echo "===== Cluster Status ====="
+
+    - |
+      aws eks describe-cluster \
+      --name "$CLUSTER_NAME" \
+      --query "cluster.status"
+
+  only:
+    - main
