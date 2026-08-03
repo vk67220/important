@@ -4771,3 +4771,341 @@ Apply:
 
 kubectl apply -f monitoring/high-cpu-alert.yml
 kubectl apply -f monitoring/high-memory-alert.yml
+
+
+
+=============================================================================================================================
+All Services build at a time 
+=============================================================================================================================
+
+name: CI - Build Scan Push
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ROLE_ARN: arn:aws:iam::302524629943:role/github-oidc-selfhosted-role
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build:
+    name: Build - ${{ matrix.service }}
+    runs-on: self-hosted
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - admin-service
+          - api-gateway
+          - booking-service
+          - movie-service
+          - payment-service
+          - user-service
+          - frontend
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+
+      ####################################################
+      # Checkout Repository
+      ####################################################
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      ####################################################
+      # Display Repository Information
+      ####################################################
+      - name: Display Repository Information
+        run: |
+          echo "=========================================="
+          echo "Repository Name : ${{ github.repository }}"
+          echo "Service         : ${{ matrix.service }}"
+          echo "Branch          : ${GITHUB_REF_NAME}"
+          echo "Commit SHA      : ${GITHUB_SHA}"
+          echo "Runner          : ${RUNNER_NAME}"
+          echo "=========================================="
+
+      ####################################################
+      # Set Variables
+      ####################################################
+      - name: Set Pipeline Variables
+        run: |
+          echo "SERVICE=${{ matrix.service }}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${{ matrix.service }}" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY=${{ matrix.service }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "BUILD_DATE=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
+      ####################################################
+      # Enable Docker BuildKit
+      ####################################################
+      - name: Enable BuildKit
+        run: |
+          echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+
+      ####################################################
+      # Verify OIDC Environment
+      ####################################################
+      - name: Verify OIDC Environment
+        run: |
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL=${ACTIONS_ID_TOKEN_REQUEST_URL:+SET}"
+          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN=${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+SET}"
+
+      ####################################################
+      # Show OIDC Claims
+      ####################################################
+      - name: Print OIDC Token Claims
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const token = await core.getIDToken("sts.amazonaws.com");
+            const payload = JSON.parse(
+              Buffer.from(token.split('.')[1], 'base64url').toString()
+            );
+            console.log(JSON.stringify(payload, null, 2));
+
+      ####################################################
+      # Configure AWS Credentials
+      ####################################################
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: GitHubActions
+          aws-region: ${{ env.AWS_REGION }}
+
+      ####################################################
+      # Verify AWS CLI
+      ####################################################
+      - name: Verify AWS CLI
+        run: aws --version
+
+      ####################################################
+      # Setup Java
+      ####################################################
+      - name: Setup Java
+        if: matrix.service != 'frontend'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      ####################################################
+      # Setup Node
+      ####################################################
+      - name: Setup Node.js
+        if: matrix.service == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      ####################################################
+      # Verify Docker
+      ####################################################
+      - name: Verify Docker Installation
+        run: |
+          docker --version
+          docker info
+
+      ####################################################
+      # Verify Trivy
+      ####################################################
+      - name: Verify Trivy Installation
+        run: trivy --version
+
+      ####################################################
+      # Validate Tools
+      ####################################################
+      - name: Validate Required Tools
+        run: |
+          command -v docker >/dev/null 2>&1 || exit 1
+          command -v aws >/dev/null 2>&1 || exit 1
+          command -v trivy >/dev/null 2>&1 || exit 1
+
+      ####################################################
+      # Create ECR Repository
+      ####################################################
+      - name: Create Amazon ECR Repository
+        run: |
+          if aws ecr describe-repositories \
+            --repository-names ${ECR_REPOSITORY} \
+            --region ${AWS_REGION} >/dev/null 2>&1; then
+            echo "Repository already exists"
+          else
+            aws ecr create-repository \
+              --repository-name ${ECR_REPOSITORY} \
+              --image-scanning-configuration scanOnPush=true \
+              --region ${AWS_REGION}
+          fi
+
+      ####################################################
+      # Remove Existing Images
+      ####################################################
+      - name: Remove Existing Docker Images
+        run: |
+          docker image rm -f ${IMAGE_NAME}:latest || true
+          docker image rm -f ${IMAGE_NAME}:${IMAGE_TAG} || true
+
+      ####################################################
+      # Build Backend Image
+      ####################################################
+      - name: Build Backend Docker Image
+        if: matrix.service != 'frontend'
+        run: |
+          docker build \
+            --pull \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -f ${SERVICE}/Dockerfile \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            ${SERVICE}
+
+      ####################################################
+      # Build Frontend Image
+      ####################################################
+      - name: Build Frontend Docker Image
+        if: matrix.service == 'frontend'
+        run: |
+          docker build \
+            --pull \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -f frontend/Dockerfile \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            .
+
+      ####################################################
+      # Trivy Scan
+      ####################################################
+      - name: Trivy Security Scan
+        run: |
+          mkdir -p trivy-report
+
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --format table \
+            --output trivy-report/${IMAGE_NAME}-${IMAGE_TAG}.txt \
+            ${IMAGE_NAME}:${IMAGE_TAG}
+
+      ####################################################
+      # Upload Trivy Report
+      ####################################################
+      - name: Upload Trivy Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.service }}-${{ github.run_number }}
+          path: trivy-report/
+          retention-days: 15
+
+      ####################################################
+      # Login ECR
+      ####################################################
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${AWS_REGION} | \
+          docker login \
+            --username AWS \
+            --password-stdin \
+            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+      ####################################################
+      # Tag Images
+      ####################################################
+      - name: Tag Docker Images
+        run: |
+          docker tag ${IMAGE_NAME}:${IMAGE_TAG} \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}
+
+          docker tag ${IMAGE_NAME}:latest \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest
+
+          docker tag ${IMAGE_NAME}:${IMAGE_TAG} \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_RUN_NUMBER}
+
+      ####################################################
+      # Push SHA Image
+      ####################################################
+      - name: Push SHA Image
+        run: |
+          docker push \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}
+
+      ####################################################
+      # Verify SHA Image
+      ####################################################
+      - name: Verify SHA Image in ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name ${ECR_REPOSITORY} \
+            --image-ids imageTag=${IMAGE_TAG}
+
+      ####################################################
+      # Push Latest Image
+      ####################################################
+      - name: Push Latest Image
+        run: |
+          docker push \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest
+
+      ####################################################
+      # Push Build Number Image
+      ####################################################
+      - name: Push Build Number Image
+        run: |
+          docker push \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_RUN_NUMBER}
+
+      ####################################################
+      # Display Image Details
+      ####################################################
+      - name: Display Image Details
+        run: |
+          echo "=========================================="
+          echo "Service    : ${SERVICE}"
+          echo "SHA Tag    : ${IMAGE_TAG}"
+          echo "Latest Tag : latest"
+          echo "Build Tag  : ${GITHUB_RUN_NUMBER}"
+          echo "Repository : ${ECR_REPOSITORY}"
+          echo "=========================================="
+
+      ####################################################
+      # Cleanup
+      ####################################################
+      - name: Docker Cleanup
+        if: always()
+        run: |
+          docker image prune -af || true
+          docker builder prune -af || true
+          docker container prune -f || true
+          docker volume prune -f || true
+          docker network prune -f || true
+
+      ####################################################
+      # Logout ECR
+      ####################################################
+      - name: Logout Amazon ECR
+        if: always()
+        run: |
+          docker logout \
+          ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com || true
