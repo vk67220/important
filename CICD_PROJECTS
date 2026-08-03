@@ -5441,3 +5441,193 @@ jobs:
         run: |
           docker logout \
           ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com || true
+
+============================================================================================================================
+single services pushes that will be get build 
+============================================================================================================================
+
+name: CI - Build Scan Push
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: 302524629943
+  ROLE_ARN: arn:aws:iam::302524629943:role/github-oidc-selfhosted-role
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  detect-service:
+    runs-on: self-hosted
+
+    outputs:
+      service: ${{ steps.detect.outputs.service }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect Changed Service
+        id: detect
+        shell: bash
+        run: |
+
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+
+          echo "$CHANGED_FILES"
+
+          SERVICE=""
+
+          if echo "$CHANGED_FILES" | grep -q "^admin-service/"; then
+            SERVICE="admin-service"
+          elif echo "$CHANGED_FILES" | grep -q "^api-gateway/"; then
+            SERVICE="api-gateway"
+          elif echo "$CHANGED_FILES" | grep -q "^booking-service/"; then
+            SERVICE="booking-service"
+          elif echo "$CHANGED_FILES" | grep -q "^movie-service/"; then
+            SERVICE="movie-service"
+          elif echo "$CHANGED_FILES" | grep -q "^payment-service/"; then
+            SERVICE="payment-service"
+          elif echo "$CHANGED_FILES" | grep -q "^user-service/"; then
+            SERVICE="user-service"
+          elif echo "$CHANGED_FILES" | grep -q "^frontend/"; then
+            SERVICE="frontend"
+          fi
+
+          echo "service=${SERVICE}" >> $GITHUB_OUTPUT
+
+  build:
+
+    runs-on: self-hosted
+
+    needs: detect-service
+
+    if: needs.detect-service.outputs.service != ''
+
+    env:
+      SERVICE: ${{ needs.detect-service.outputs.service }}
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Enable Docker BuildKit
+        run: |
+          echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          role-session-name: GitHubActions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Java
+        if: env.SERVICE != 'frontend'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Setup Node.js
+        if: env.SERVICE == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Login Amazon ECR
+        run: |
+          aws ecr get-login-password \
+            --region ${AWS_REGION} | \
+          docker login \
+            --username AWS \
+            --password-stdin \
+            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+      - name: Create Repository If Not Exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${SERVICE} \
+            --region ${AWS_REGION} >/dev/null 2>&1 || \
+          aws ecr create-repository \
+            --repository-name ${SERVICE} \
+            --image-scanning-configuration scanOnPush=true \
+            --region ${AWS_REGION}
+
+      - name: Build Backend Image
+        if: env.SERVICE != 'frontend'
+        run: |
+          docker build \
+            --pull \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -f ${SERVICE}/Dockerfile \
+            -t ${SERVICE}:${IMAGE_TAG} \
+            ${SERVICE}
+
+      - name: Build Frontend Image
+        if: env.SERVICE == 'frontend'
+        run: |
+          docker build \
+            --pull \
+            --label org.opencontainers.image.revision=${GITHUB_SHA} \
+            --label org.opencontainers.image.created=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -f frontend/Dockerfile \
+            -t frontend:${IMAGE_TAG} \
+            .
+
+      - name: Trivy Scan
+        run: |
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            ${SERVICE}:${IMAGE_TAG}
+
+      - name: Tag Images
+        run: |
+          docker tag \
+            ${SERVICE}:${IMAGE_TAG} \
+            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${SERVICE}:${IMAGE_TAG}
+
+          docker tag \
+            ${SERVICE}:${IMAGE_TAG} \
+            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${SERVICE}:latest
+
+      - name: Push SHA Tag
+        run: |
+          docker push \
+            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${SERVICE}:${IMAGE_TAG}
+
+      - name: Push Latest Tag
+        run: |
+          docker push \
+            ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${SERVICE}:latest
+
+      - name: Verify Image Exists In ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name ${SERVICE} \
+            --image-ids imageTag=${IMAGE_TAG}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker image prune -af || true
+          docker builder prune -af || true
+          docker system df
