@@ -5631,3 +5631,147 @@ jobs:
           docker image prune -af || true
           docker builder prune -af || true
           docker system df
+============================================================================================================================
+docker compose deploy for single services
+============================================================================================================================
+
+name: CD - Deploy Service
+
+on:
+  workflow_dispatch:
+    inputs:
+
+      service:
+        description: "Service Name"
+        required: true
+        type: choice
+        options:
+          - admin-service
+          - api-gateway
+          - booking-service
+          - movie-service
+          - payment-service
+          - user-service
+          - frontend
+
+      image_tag:
+        description: "Git SHA Image Tag"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  deploy:
+
+    runs-on: self-hosted
+
+    env:
+      AWS_REGION: us-east-1
+      AWS_ACCOUNT_ID: 302524629943
+      ECR_REGISTRY: 302524629943.dkr.ecr.us-east-1.amazonaws.com
+      SERVICE: ${{ github.event.inputs.service }}
+      IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::302524629943:role/github-oidc-selfhosted-role
+          aws-region: us-east-1
+
+      - name: Login Amazon ECR
+        run: |
+          aws ecr get-login-password \
+            --region ${AWS_REGION} | \
+          docker login \
+            --username AWS \
+            --password-stdin \
+            ${ECR_REGISTRY}
+
+      - name: Verify Image Exists
+        run: |
+          aws ecr describe-images \
+            --repository-name ${SERVICE} \
+            --image-ids imageTag=${IMAGE_TAG}
+
+      - name: Update Service Tag Variable
+        shell: bash
+        run: |
+
+          case "${SERVICE}" in
+            admin-service)
+              VAR="ADMIN_SERVICE_TAG"
+              ;;
+            api-gateway)
+              VAR="API_GATEWAY_TAG"
+              ;;
+            booking-service)
+              VAR="BOOKING_SERVICE_TAG"
+              ;;
+            movie-service)
+              VAR="MOVIE_SERVICE_TAG"
+              ;;
+            payment-service)
+              VAR="PAYMENT_SERVICE_TAG"
+              ;;
+            user-service)
+              VAR="USER_SERVICE_TAG"
+              ;;
+            frontend)
+              VAR="FRONTEND_TAG"
+              ;;
+          esac
+
+          if grep -q "^${VAR}=" .env; then
+            sed -i "s/^${VAR}=.*/${VAR}=${IMAGE_TAG}/" .env
+          else
+            echo "${VAR}=${IMAGE_TAG}" >> .env
+          fi
+
+          cat .env
+
+      - name: Pull Only Selected Service
+        run: |
+          docker compose pull ${SERVICE}
+
+      - name: Deploy Only Selected Service
+        run: |
+          docker compose up -d \
+            --no-deps \
+            --force-recreate \
+            ${SERVICE}
+
+      - name: Verify Service
+        run: |
+          docker compose ps ${SERVICE}
+
+      - name: Show Logs
+        continue-on-error: true
+        run: |
+          docker compose logs \
+            --tail=100 \
+            ${SERVICE}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker image prune -af || true
+          docker builder prune -af || true
+          docker system df
+
+      - name: Logout ECR
+        if: always()
+        run: |
+          docker logout ${ECR_REGISTRY} || true
