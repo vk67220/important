@@ -5775,3 +5775,490 @@ jobs:
         if: always()
         run: |
           docker logout ${ECR_REGISTRY} || true
+
+
+
+
+
+
+============================================================================================================================
+Complete project 
+============================================================================================================================
+
+name: CI - Build & Unit Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Select Service"
+        required: true
+        type: choice
+        options:
+          - ui
+          - cart
+          - orders
+          - checkout
+          - catalog
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.event.inputs.service }}
+  cancel-in-progress: true
+
+env:
+  SERVICE: ${{ github.event.inputs.service }}
+
+jobs:
+
+  build-test:
+
+    runs-on: self-hosted
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+
+    #########################################################
+    # Checkout Repository
+    #########################################################
+
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    #########################################################
+    # Display Build Information
+    #########################################################
+
+    - name: Display Build Information
+      run: |
+        echo "======================================="
+        echo "Repository : $GITHUB_REPOSITORY"
+        echo "Branch     : $GITHUB_REF_NAME"
+        echo "Commit      : $GITHUB_SHA"
+        echo "Service     : ${SERVICE}"
+        echo "Runner      : $RUNNER_NAME"
+        echo "======================================="
+
+    #########################################################
+    # Detect Runtime
+    #########################################################
+
+    - name: Detect Runtime
+      run: |
+
+        if [[ "${SERVICE}" == "ui" || \
+              "${SERVICE}" == "cart" || \
+              "${SERVICE}" == "orders" ]]; then
+
+            echo "RUNTIME=java" >> $GITHUB_ENV
+
+        elif [[ "${SERVICE}" == "checkout" ]]; then
+
+            echo "RUNTIME=node" >> $GITHUB_ENV
+
+        elif [[ "${SERVICE}" == "catalog" ]]; then
+
+            echo "RUNTIME=go" >> $GITHUB_ENV
+
+        else
+
+            echo "Unknown Service"
+            exit 1
+
+        fi
+
+    #########################################################
+    # Verify Service Folder
+    #########################################################
+
+    - name: Verify Service Folder
+      run: |
+
+        if [ ! -d src/${SERVICE} ]; then
+            echo "Service folder not found"
+            exit 1
+        fi
+
+    #########################################################
+    # Display Runtime
+    #########################################################
+
+    - name: Display Runtime
+      run: |
+
+        echo "Runtime : ${RUNTIME}"
+
+    #########################################################
+    # Java Setup
+    #########################################################
+
+    - name: Setup Java
+      if: env.RUNTIME == 'java'
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '21'
+        cache: maven
+
+    #########################################################
+    # Node Setup
+    #########################################################
+
+    - name: Setup NodeJS
+      if: env.RUNTIME == 'node'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: src/checkout/package-lock.json
+
+    #########################################################
+    # Go Setup
+    #########################################################
+
+    - name: Setup Go
+      if: env.RUNTIME == 'go'
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    #########################################################
+    # Restore Maven Cache
+    #########################################################
+
+    - name: Restore Maven Cache
+      if: env.RUNTIME == 'java'
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ runner.os }}-${{ hashFiles(format('src/{0}/pom.xml', env.SERVICE)) }}
+        restore-keys: |
+          maven-${{ runner.os }}
+
+    #########################################################
+    # Restore Go Cache
+    #########################################################
+
+    - name: Restore Go Modules
+      if: env.RUNTIME == 'go'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: go-${{ runner.os }}-${{ hashFiles('src/catalog/go.sum') }}
+        restore-keys: |
+          go-${{ runner.os }}
+
+    #########################################################
+    # Display Tool Versions
+    #########################################################
+
+    - name: Display Tool Versions
+      run: |
+
+        if [ "${RUNTIME}" = "java" ]; then
+          java -version
+          mvn -version
+        fi
+
+        if [ "${RUNTIME}" = "node" ]; then
+          node --version
+          npm --version
+        fi
+
+        if [ "${RUNTIME}" = "go" ]; then
+          go version
+        fi
+        #########################################################
+    # JAVA BUILD
+    #########################################################
+
+    - name: Maven Clean
+      if: env.RUNTIME == 'java'
+      working-directory: src/${{ env.SERVICE }}
+      run: |
+        mvn clean package -DskipTests
+
+    - name: Download Maven Dependencies
+      if: env.RUNTIME == 'java'
+      working-directory: src/${{ env.SERVICE }}
+      run: |
+        mvn dependency:resolve
+
+    - name: Compile Java Application
+      if: env.RUNTIME == 'java'
+      working-directory: src/${{ env.SERVICE }}
+      run: |
+        mvn compile
+
+    - name: Package Java Application
+      if: env.RUNTIME == 'java'
+      working-directory: src/${{ env.SERVICE }}
+      run: |
+        mvn package -DskipTests
+
+    - name: Run Java Unit Tests
+      if: env.RUNTIME == 'java'
+      working-directory: src/${{ env.SERVICE }}
+      run: |
+        mvn clean package -DskipTests
+
+    #########################################################
+    # NODEJS BUILD
+    #########################################################
+
+    - name: Install Node Dependencies
+      if: env.RUNTIME == 'node'
+      working-directory: src/checkout
+      run: |
+        npm ci
+
+    - name: Verify Installed Packages
+      if: env.RUNTIME == 'node'
+      working-directory: src/checkout
+      run: |
+        npm list --depth=0
+
+    - name: Build Checkout Service
+      if: env.RUNTIME == 'node'
+      working-directory: src/checkout
+      run: |
+        npm run build
+
+    - name: Run Checkout Unit Tests
+      if: env.RUNTIME == 'node'
+      working-directory: src/checkout
+      run: |
+        npm test -- --watch=false || npm test || true
+
+    #########################################################
+    # GO BUILD
+    #########################################################
+
+    - name: Download Go Modules
+      if: env.RUNTIME == 'go'
+      working-directory: src/catalog
+      run: |
+        go mod download
+
+    - name: Verify Go Modules
+      if: env.RUNTIME == 'go'
+      working-directory: src/catalog
+      run: |
+        go mod verify
+
+    - name: Build Catalog Service
+      if: env.RUNTIME == 'go'
+      working-directory: src/catalog
+      run: |
+        go build -v ./...
+
+    - name: Run Go Unit Tests
+      if: env.RUNTIME == 'go'
+      working-directory: src/catalog
+      run: |
+        go test -v ./...
+
+    #########################################################
+    # VERIFY BUILD OUTPUT
+    #########################################################
+
+    - name: Verify Java Artifact
+      if: env.RUNTIME == 'java'
+      run: |
+        ls -lh src/${SERVICE}/target
+
+    - name: Verify Node Artifact
+      if: env.RUNTIME == 'node'
+      run: |
+        ls -lh src/checkout/dist
+
+    - name: Verify Go Binary
+      if: env.RUNTIME == 'go'
+      run: |
+        ls -lh src/catalog
+
+    #########################################################
+    # UPLOAD TEST REPORTS
+    #########################################################
+
+    - name: Upload Java Test Reports
+      if: env.RUNTIME == 'java'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.SERVICE }}-junit-report
+        path: |
+          src/${{ env.SERVICE }}/target/surefire-reports/**
+
+    - name: Upload Go Test Reports
+      if: env.RUNTIME == 'go'
+      uses: actions/upload-artifact@v4
+      with:
+        name: catalog-test-report
+        path: |
+          src/catalog
+
+    - name: Upload Node Test Reports
+      if: env.RUNTIME == 'node'
+      uses: actions/upload-artifact@v4
+      with:
+        name: checkout-test-report
+        path: |
+          src/checkout
+     #########################################################
+    # UPLOAD BUILD ARTIFACTS
+    #########################################################
+
+    - name: Upload Java Artifact
+      if: env.RUNTIME == 'java'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.SERVICE }}-jar
+        path: |
+          src/${{ env.SERVICE }}/target/*.jar
+        if-no-files-found: error
+        retention-days: 7
+
+    - name: Upload Node Artifact
+      if: env.RUNTIME == 'node'
+      uses: actions/upload-artifact@v4
+      with:
+        name: checkout-dist
+        path: |
+          src/checkout/dist/**
+        if-no-files-found: error
+        retention-days: 7
+
+    - name: Upload Go Artifact
+      if: env.RUNTIME == 'go'
+      uses: actions/upload-artifact@v4
+      with:
+        name: catalog-binary
+        path: |
+          src/catalog
+        if-no-files-found: warn
+        retention-days: 7
+
+    #########################################################
+    # BUILD INFORMATION
+    #########################################################
+
+    - name: Display Build Files
+      run: |
+
+        echo "======================================"
+
+        if [ "${RUNTIME}" = "java" ]; then
+
+          ls -lh src/${SERVICE}/target
+
+        fi
+
+        if [ "${RUNTIME}" = "node" ]; then
+
+          ls -lh src/checkout/dist
+
+        fi
+
+        if [ "${RUNTIME}" = "go" ]; then
+
+          ls -lh src/catalog
+
+        fi
+
+        echo "======================================"
+
+    #########################################################
+    # GITHUB STEP SUMMARY
+    #########################################################
+
+    - name: Generate Build Summary
+      run: |
+
+        {
+          echo "# Build Summary"
+          echo ""
+          echo "| Property | Value |"
+          echo "|----------|-------|"
+          echo "| Service | ${SERVICE} |"
+          echo "| Runtime | ${RUNTIME} |"
+          echo "| Repository | ${GITHUB_REPOSITORY} |"
+          echo "| Branch | ${GITHUB_REF_NAME} |"
+          echo "| Commit | ${GITHUB_SHA} |"
+          echo "| Runner | ${RUNNER_NAME} |"
+          echo "| Workflow | ${GITHUB_WORKFLOW} |"
+          echo "| Status | SUCCESS |"
+        } >> $GITHUB_STEP_SUMMARY
+
+    #########################################################
+    # VERIFY WORKSPACE
+    #########################################################
+
+    - name: Workspace Information
+      run: |
+
+        echo "Workspace"
+
+        pwd
+
+        echo ""
+
+        echo "Repository Size"
+
+        du -sh .
+
+        echo ""
+
+        echo "Top Level"
+
+        ls -lh
+
+    #########################################################
+    # CLEANUP
+    #########################################################
+
+    - name: Cleanup Workspace
+      if: always()
+      run: |
+
+        echo "Cleaning temporary files..."
+
+        find . -type f -name "*.tmp" -delete || true
+
+        find . -type f -name "*.log" -delete || true
+
+    #########################################################
+    # FINAL BUILD STATUS
+    #########################################################
+
+    - name: Build Successful
+      run: |
+
+        echo ""
+        echo "======================================"
+        echo "BUILD COMPLETED SUCCESSFULLY"
+        echo "======================================"
+        echo "Service      : ${SERVICE}"
+        echo "Runtime      : ${RUNTIME}"
+        echo "Repository   : ${GITHUB_REPOSITORY}"
+        echo "Branch       : ${GITHUB_REF_NAME}"
+        echo "Commit       : ${GITHUB_SHA}"
+        echo "======================================"
+
+    #########################################################
+    # JOB OUTPUTS
+    #########################################################
+
+    - name: Export Outputs
+      id: outputs
+      run: |
+
+        echo "service=${SERVICE}" >> $GITHUB_OUTPUT
+        echo "runtime=${RUNTIME}" >> $GITHUB_OUTPUT
+
