@@ -6262,3 +6262,1397 @@ jobs:
         echo "service=${SERVICE}" >> $GITHUB_OUTPUT
         echo "runtime=${RUNTIME}" >> $GITHUB_OUTPUT
 
+
+
+
+==============================================================================================================================
+Observability
+==============================================================================================================================
+
+Excellent. Your Phase 1 prerequisites are healthy.
+
+You have:
+
+3 EKS worker nodes
+Metrics Server working
+kubectl top nodes working
+kubectl top pods -n retail working
+Helm 3.21.4
+Istio control plane healthy
+
+So we can proceed with Prometheus + Grafana + kube-state-metrics + Node Exporter + Alertmanager.
+
+Phase 2 — Install kube-prometheus-stack
+
+I recommend installing it in a dedicated namespace:
+
+monitoring
+
+Architecture:
+
+                    EKS Cluster
+                         │
+                kube-prometheus-stack
+                         │
+       ┌─────────────────┼─────────────────┐
+       │                 │                 │
+  Prometheus           Grafana        Alertmanager
+       │
+ ┌─────┼──────────────┐
+ │     │              │
+Node  Pods       Kubernetes
+Exporter          State
+                  Metrics
+Step 1 — Create monitoring namespace
+
+Run:
+
+kubectl create namespace monitoring
+
+If it already exists, you'll get AlreadyExists; that's fine.
+
+Verify:
+
+kubectl get namespace monitoring
+
+Expected:
+
+NAME         STATUS   AGE
+monitoring   Active   ...
+Step 2 — Add Prometheus Community Helm repository
+
+You currently don't have it in helm repo list.
+
+Run:
+
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts
+
+Then:
+
+helm repo update
+
+Verify:
+
+helm repo list
+
+You should now see:
+
+prometheus-community   https://prometheus-community.github.io/helm-charts
+Step 3 — Check the chart
+
+Run:
+
+helm search repo prometheus-community/kube-prometheus-stack
+
+You should get something similar to:
+
+NAME                                      CHART VERSION   APP VERSION
+prometheus-community/kube-prometheus-stack ...
+
+Don't worry if the exact version is different.
+
+Step 4 — Install kube-prometheus-stack
+
+For the initial installation, use:
+
+helm install monitoring \
+  prometheus-community/kube-prometheus-stack \
+  --namespace monitoring
+
+This creates the monitoring stack under:
+
+monitoring
+Check Helm
+helm list -n monitoring
+
+Expected:
+
+NAME         NAMESPACE    STATUS
+monitoring   monitoring   deployed
+Step 5 — Watch the Pods
+
+Run:
+
+kubectl get pods -n monitoring -w
+
+Wait until the components become Running.
+
+You should eventually see components similar to:
+
+alertmanager-monitoring-kube-prometheus-alertmanager-0
+monitoring-grafana-xxxxxxxxxx
+monitoring-kube-prometheus-operator-xxxxxxxxxx
+monitoring-kube-state-metrics-xxxxxxxxxx
+monitoring-prometheus-node-exporter-xxxxx
+prometheus-monitoring-kube-prometheus-prometheus-0
+
+Don't proceed until the important Pods are healthy.
+
+Press:
+
+Ctrl+C
+
+after everything is running.
+
+Step 6 — Check all monitoring resources
+
+Run:
+
+kubectl get all -n monitoring
+
+Also:
+
+kubectl get servicemonitors -n monitoring
+
+and:
+
+kubectl get prometheusrules -n monitoring
+
+You should see many resources.
+
+Step 7 — Check Node Exporter
+
+Run:
+
+kubectl get pods -n monitoring | grep node-exporter
+
+Because you have 3 worker nodes, you should normally see approximately 3 Node Exporter Pods.
+
+For example:
+
+monitoring-prometheus-node-exporter-xxxxx   1/1   Running
+monitoring-prometheus-node-exporter-yyyyy   1/1   Running
+monitoring-prometheus-node-exporter-zzzzz   1/1   Running
+
+This gives Prometheus detailed node-level metrics.
+
+Your existing:
+
+kubectl top nodes
+
+gives basic CPU/memory metrics.
+
+Node Exporter gives much more infrastructure information such as:
+
+CPU
+Memory
+Disk
+Filesystem
+Network
+Load
+System metrics
+Step 8 — Check kube-state-metrics
+
+Run:
+
+kubectl get pods -n monitoring | grep kube-state
+
+You should see:
+
+monitoring-kube-state-metrics-xxxxx   1/1   Running
+
+This is important because it exposes Kubernetes object/state information to Prometheus.
+
+For example:
+
+Deployment replicas
+Available replicas
+Pod state
+HPA state
+DaemonSets
+StatefulSets
+Jobs
+Namespaces
+Services
+PVCs
+Step 9 — Check Prometheus
+
+Run:
+
+kubectl get pods -n monitoring | grep prometheus
+
+You should have the Prometheus server Pod running.
+
+Then:
+
+kubectl get svc -n monitoring | grep prometheus
+
+You should see something similar to:
+
+monitoring-kube-prometheus-prometheus
+Step 10 — Access Prometheus from your browser
+
+Don't expose it to the internet yet.
+
+Use port forwarding:
+
+kubectl port-forward \
+  -n monitoring \
+  svc/monitoring-kube-prometheus-prometheus \
+  9090:9090
+
+You should see:
+
+Forwarding from 127.0.0.1:9090 -> 9090
+
+Now open on your local computer browser:
+
+http://localhost:9090
+
+You should get the Prometheus UI.
+
+Keep that terminal open while testing.
+
+Step 11 — Test Prometheus
+
+In Prometheus, go to the query/expression area.
+
+Run:
+
+up
+
+You should get many results.
+
+This means Prometheus is successfully scraping targets.
+
+Then test:
+
+kube_pod_info
+
+You should see Kubernetes Pod information.
+
+Test node metrics:
+
+node_cpu_seconds_total
+
+Test memory:
+
+node_memory_MemAvailable_bytes
+
+Test Kubernetes deployments:
+
+kube_deployment_status_replicas_available
+
+Test HPA:
+
+kube_horizontalpodautoscaler_status_current_replicas
+
+If these return data, your Kubernetes monitoring is working.
+
+Step 12 — Check Prometheus Targets
+
+In Prometheus browser:
+
+Status
+   ↓
+Targets
+
+Look for targets related to:
+
+kube-state-metrics
+node-exporter
+kubelet
+kubernetes
+prometheus
+alertmanager
+
+The target should generally show:
+
+UP
+
+This is an important validation.
+
+Step 13 — Check your retail namespace specifically
+
+In Prometheus, try:
+
+kube_pod_info{namespace="retail"}
+
+You should see Pods such as:
+
+cart
+catalog
+checkout
+orders-v1
+orders-v2
+ui
+
+You can also query CPU:
+
+sum by (pod) (
+  rate(container_cpu_usage_seconds_total{namespace="retail",container!="POD",container!=""}[5m])
+)
+
+And memory:
+
+sum by (pod) (
+  container_memory_working_set_bytes{namespace="retail",container!="POD",container!=""}
+)
+
+Now Prometheus is monitoring your actual application.
+
+Step 14 — Check your Orders canary
+
+This is particularly important because you have:
+
+orders-v1
+orders-v2
+
+Run:
+
+kube_pod_info{namespace="retail",pod=~"orders.*"}
+
+You should see both versions.
+
+You can also check their CPU:
+
+sum by (pod) (
+  rate(container_cpu_usage_seconds_total{
+    namespace="retail",
+    pod=~"orders.*",
+    container!="POD",
+    container!=""
+  }[5m])
+)
+
+This will allow you to compare:
+
+orders-v1 CPU
+orders-v2 CPU
+Step 15 — Access Grafana
+
+First find the Grafana Service:
+
+kubectl get svc -n monitoring | grep grafana
+
+Usually you'll see:
+
+monitoring-grafana
+
+Now port-forward:
+
+kubectl port-forward \
+  -n monitoring \
+  svc/monitoring-grafana \
+  3000:80
+
+You should see:
+
+Forwarding from 127.0.0.1:3000 -> 3000
+
+Open:
+
+http://localhost:3000
+Step 16 — Get Grafana credentials
+
+Run:
+
+kubectl get secret \
+  -n monitoring \
+  monitoring-grafana \
+  -o jsonpath="{.data.admin-user}" | base64 -d
+
+Username should normally be:
+
+admin
+
+Password:
+
+kubectl get secret \
+  -n monitoring \
+  monitoring-grafana \
+  -o jsonpath="{.data.admin-password}" | base64 -d
+
+Copy the password.
+
+Login at:
+
+http://localhost:3000
+Step 17 — Check Grafana datasource
+
+After logging into Grafana:
+
+Connections
+   ↓
+Data sources
+
+You should have:
+
+Prometheus
+
+Open it and click:
+
+Save & test
+
+You want a successful connection.
+
+The datasource should point to the Prometheus service inside the cluster.
+
+Step 18 — Check Kubernetes dashboards
+
+Go to:
+
+Dashboards
+
+The kube-prometheus-stack provides dashboards for Kubernetes monitoring.
+
+Look for dashboards covering:
+
+Kubernetes / Compute Resources / Cluster
+Kubernetes / Compute Resources / Node
+Kubernetes / Compute Resources / Namespace
+Kubernetes / Compute Resources / Pod
+Kubernetes / Kubelet
+Node Exporter
+
+Now you can see your:
+
+3 EKS Nodes
+     ↓
+Namespaces
+     ↓
+Pods
+     ↓
+Containers
+     ↓
+CPU / Memory / Network
+Step 19 — Monitor your retail namespace
+
+In Grafana, select the Kubernetes namespace:
+
+retail
+
+You should be able to see:
+
+cart
+catalog
+checkout
+orders-v1
+orders-v2
+ui
+
+And infrastructure:
+
+carts-db
+catalog-db
+checkout-redis
+orders-db
+rabbitmq
+
+This is the beginning of your full application monitoring.
+
+Step 20 — Monitor HPA
+
+You already confirmed Metrics Server works:
+
+kubectl top pods
+
+Now Prometheus/Grafana can monitor HPA state.
+
+Run in Prometheus:
+
+kube_horizontalpodautoscaler_status_current_replicas{
+  namespace="retail"
+}
+
+Then:
+
+kube_horizontalpodautoscaler_spec_max_replicas{
+  namespace="retail"
+}
+
+And:
+
+kube_horizontalpodautoscaler_status_desired_replicas{
+  namespace="retail"
+}
+
+This lets you visualize:
+
+Current replicas
+Desired replicas
+Minimum replicas
+Maximum replicas
+Step 21 — Monitor nodes
+
+Your current cluster has:
+
+ip-10-1-3-76
+ip-10-1-3-82
+ip-10-1-4-245
+
+Grafana can now show:
+
+Node 1
+ CPU
+ Memory
+ Disk
+ Network
+
+Node 2
+ CPU
+ Memory
+ Disk
+ Network
+
+Node 3
+ CPU
+ Memory
+ Disk
+ Network
+
+This is much more comprehensive than:
+
+kubectl top nodes
+Step 22 — Don't install Kiali yet
+
+At this point, stop after Prometheus + Grafana are working.
+
+Don't install Kiali until we confirm:
+
+[✓] Prometheus running
+[✓] Grafana running
+[✓] kube-state-metrics running
+[✓] Node Exporter running
+[✓] Prometheus targets UP
+[✓] Kubernetes metrics available
+[✓] Retail Pods visible
+[✓] EKS nodes visible
+[✓] HPA metrics visible
+
+Then we'll integrate Istio metrics.
+
+The final architecture will become:
+
+                         Grafana
+                            │
+             ┌──────────────┼───────────────┐
+             │              │               │
+       Kubernetes         Istio           Nodes
+        Metrics           Metrics         Metrics
+             │              │               │
+             └──────────────┼───────────────┘
+                            │
+                       Prometheus
+                            │
+        ┌───────────────────┼──────────────────┐
+        │                   │                  │
+ kube-state-metrics    Istio Envoy       Node Exporter
+        │                   │                  │
+       K8s                 Mesh              EKS
+
+Then:
+
+                         Kiali
+                           │
+                          Istio
+                           │
+       ┌───────────────────┼───────────────────┐
+       ↓                   ↓                   ↓
+     Gateway          VirtualService     DestinationRule
+       ↓                   ↓                   ↓
+      UI                Orders            v1 / v2
+                           │
+                        Canary
+                        90 / 10
+
+And after that we'll add:
+
+Loki → Logs
+Tempo/Jaeger → Traces
+Alertmanager → Alerts
+Do Phase 2 now
+
+Run these in order:
+
+kubectl create namespace monitoring
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts
+helm repo update
+helm search repo prometheus-community/kube-prometheus-stack
+
+Then install:
+
+helm install monitoring \
+  prometheus-community/kube-prometheus-stack \
+  -n monitoring
+
+Finally:
+
+kubectl get pods -n monitoring
+
+Paste the output of kubectl get pods -n monitoring after installation. We can then validate every component before moving to Grafana and Istio observability.
+
+Pasted text(20260901-193708).txt
+Document
+
+If you mean “which observability tools are most commonly used in real-world DevOps/SRE environments?”, there isn't one universal stack. But for Kubernetes/EKS, the practical priority is:
+
+Area	Common real-world choice	Priority
+Metrics	Prometheus	⭐⭐⭐⭐⭐
+Dashboards	Grafana	⭐⭐⭐⭐⭐
+Logs	Loki / Elasticsearch-OpenSearch / Splunk	⭐⭐⭐⭐⭐
+Tracing	OpenTelemetry + Jaeger/Tempo/vendor backend	⭐⭐⭐⭐
+Alerting	Alertmanager / PagerDuty / Opsgenie	⭐⭐⭐⭐⭐
+Istio visualization	Kiali	⭐⭐⭐
+AWS infrastructure	CloudWatch	⭐⭐⭐⭐⭐
+Cloud/SaaS observability	Datadog / Dynatrace / New Relic	⭐⭐⭐⭐
+If you're targeting AWS DevOps/SRE jobs
+
+I'd learn this stack first:
+
+                Kubernetes / EKS
+                       |
+        ┌──────────────┼──────────────┐
+        ↓              ↓              ↓
+    Prometheus       Loki       OpenTelemetry
+        ↓              ↓              ↓
+     Grafana        Grafana         Tempo
+        |
+   Alertmanager
+        |
+   Slack / PagerDuty
+
+And alongside it:
+
+AWS
+ ├── CloudWatch
+ ├── CloudTrail
+ ├── GuardDuty
+ └── Security Hub
+What I would NOT prioritize heavily
+
+Kiali is useful if your company uses Istio, but I wouldn't spend weeks on it. It's a specialized service-mesh visualization tool.
+
+Similarly, don't try to learn every observability product. For interviews, being strong in:
+
+Prometheus + Grafana + centralized logging + OpenTelemetry + Alertmanager + CloudWatch
+
+is much more valuable.
+
+For your project specifically
+
+You've already done:
+
+Prometheus + Grafana + Istio + Kiali
+
+So your next implementation should be:
+
+1. Alertmanager → alerts
+2. Loki + Grafana Alloy → centralized logs
+3. OpenTelemetry + Tempo → distributed tracing
+4. CloudWatch → AWS-level monitoring
+
+That will give you a very realistic production-style observability implementation.
+
+Logs   how to set it 
+
+Yes. Since you already have Prometheus + Grafana running on your EKS cluster, the next step is centralized logging.
+
+For a modern Kubernetes setup, I recommend:
+
+Grafana Alloy → Loki → Grafana
+
+Instead of installing Promtail for a new setup, use Grafana Alloy.
+
+1. What we are going to build
+
+Currently you probably do:
+
+kubectl logs orders-xxxxx -n retail
+
+After centralized logging:
+
+                    EKS
+                     |
+              ┌──────┴──────┐
+              │             │
+           Pod logs      Pod logs
+              │             │
+              └──────┬──────┘
+                     ↓
+              Grafana Alloy
+                     ↓
+                   Loki
+                     ↓
+                  Grafana
+                     ↓
+              Search / Filter
+
+You'll be able to search all your microservice logs from Grafana:
+
+namespace="retail"
+app="orders"
+2. Install Loki
+
+Because you are already using Helm, first check:
+
+helm version
+
+You already have Helm 3.21.x, so that's fine.
+
+Add the Grafana Helm repository:
+
+helm repo add grafana https://grafana.github.io/helm-charts
+
+Update:
+
+helm repo update
+
+Check Loki versions:
+
+helm search repo grafana/loki
+3. Create the logging namespace
+
+I recommend keeping logging separate:
+
+kubectl create namespace logging
+
+Verify:
+
+kubectl get ns logging
+4. Install Loki
+
+For your practice EKS cluster, start with Loki in monolithic mode.
+
+Create:
+
+mkdir -p k8s/observability/loki
+cd k8s/observability/loki
+
+Create loki-values.yaml:
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+
+  commonConfig:
+    replication_factor: 1
+
+  storage:
+    type: filesystem
+
+singleBinary:
+  replicas: 1
+
+  persistence:
+    enabled: true
+    size: 20Gi
+
+backend:
+  replicas: 0
+
+read:
+  replicas: 0
+
+write:
+  replicas: 0
+
+ingester:
+  replicas: 0
+
+querier:
+  replicas: 0
+
+queryFrontend:
+  replicas: 0
+
+queryScheduler:
+  replicas: 0
+
+distributor:
+  replicas: 0
+
+compactor:
+  replicas: 0
+
+indexGateway:
+  replicas: 0
+
+ruler:
+  replicas: 0
+
+gateway:
+  enabled: false
+
+chunksCache:
+  enabled: false
+
+resultsCache:
+  enabled: false
+
+minio:
+  enabled: false
+
+monitoring:
+  selfMonitoring:
+    enabled: false
+
+test:
+  enabled: false
+
+For a practice/lab environment, filesystem storage is okay. For production, Loki should normally use object storage such as Amazon S3 rather than local filesystem storage.
+
+5. Install Loki
+
+Run:
+
+helm upgrade --install loki grafana/loki \
+  -n logging \
+  -f loki-values.yaml
+
+Then:
+
+kubectl get pods -n logging
+
+You should eventually see something like:
+
+loki-0    1/1    Running
+
+Check:
+
+kubectl get svc -n logging
+
+You should have a Loki service.
+
+6. Test Loki
+
+Find the service:
+
+kubectl get svc -n logging
+
+Then test from inside the cluster.
+
+For example:
+
+kubectl run curl-loki \
+  -n logging \
+  --image=curlimages/curl \
+  --restart=Never \
+  --rm -it \
+  -- curl http://loki.logging.svc.cluster.local:3100/ready
+
+Expected:
+
+ready
+
+If you get:
+
+ready
+
+Loki is working.
+
+7. Install Grafana Alloy
+
+Now we need something that reads Kubernetes container logs.
+
+Architecture:
+
+/var/log/pods/*
+       ↓
+Grafana Alloy
+       ↓
+Loki
+
+Add/update Grafana repo:
+
+helm repo update
+
+Search:
+
+helm search repo grafana/alloy
+
+Create:
+
+mkdir -p ../alloy
+cd ../alloy
+
+Create:
+
+alloy-values.yaml
+
+We'll configure Alloy as a DaemonSet because every Kubernetes node needs access to local container logs.
+
+8. Alloy configuration
+
+For your cluster, the important configuration is:
+
+controller:
+  type: daemonset
+
+alloy:
+  configMap:
+    content: |
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app"]
+          target_label  = "app"
+        }
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki-gateway.logging.svc.cluster.local/loki/api/v1/push"
+        }
+      }
+
+However, don't install this exact configuration blindly yet.
+
+Alloy's Kubernetes log discovery configuration has several details around pod log paths, RBAC, and the current Alloy chart version. Since you're building this as a real-world project, I recommend we validate the installed chart version and then create the exact production-compatible manifest for your cluster rather than mixing configurations from different Alloy releases.
+
+9. Verify your current Grafana
+
+You already have:
+
+monitoring-grafana
+
+in:
+
+monitoring
+
+namespace.
+
+Once Loki is running, we will add Loki as a Grafana data source.
+
+Your architecture will become:
+
+                    Grafana
+                       |
+          ┌────────────┴────────────┐
+          ↓                         ↓
+     Prometheus                    Loki
+          ↓                         ↓
+       Metrics                     Logs
+10. What you'll see in Grafana
+
+After Loki + Alloy are configured:
+
+Go to:
+
+Grafana → Explore
+
+Select:
+
+Loki
+
+Then query:
+
+{namespace="retail"}
+
+You should see logs from:
+
+cart
+catalog
+checkout
+orders
+ui
+
+You can filter:
+
+{namespace="retail", app="orders"}
+
+or:
+
+{namespace="retail", container="orders"}
+
+You can search errors:
+
+{namespace="retail"} |= "error"
+11. Your final observability setup
+
+After this implementation you'll have:
+
+                  EKS
+                   |
+       ┌───────────┼───────────┐
+       │           │           │
+       ↓           ↓           ↓
+    Metrics       Logs       Traces
+       │           │           │
+       ↓           ↓           ↓
+ Prometheus      Alloy     OpenTelemetry
+       │           ↓           ↓
+       │          Loki      Tempo
+       │           │           │
+       └───────────┼───────────┘
+                   ↓
+                Grafana
+                   |
+        ┌──────────┼──────────┐
+        ↓          ↓          ↓
+     Metrics      Logs      Traces
+
+And your Istio layer:
+
+                  Istio
+                    |
+             ┌──────┴──────┐
+             ↓             ↓
+          Kiali       Prometheus
+             |             |
+             └──────┬──────┘
+                    ↓
+                 Grafana
+What I recommend for you now
+
+Don't install Alloy yet.
+
+First install and validate Loki, then we'll configure Grafana Alloy to collect logs from all your retail pods.
+
+Start with these commands:
+
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+kubectl create namespace logging
+
+helm search repo grafana/loki
+
+Paste the output of:
+
+helm search repo grafana/loki
+
+and
+
+kubectl get nodes
+
+Then I'll give you the exact Loki installation for your current EKS cluster, followed by Alloy → Loki → Grafana, step by step.
+
+now i completed creating prometheus and grafana then next steps without mixing
+
+Absolutely. Let's keep it clean and sequential. Since you have completed Prometheus + Grafana, don't install anything else yet.
+
+For your EKS project, follow this order:
+
+Current status
+✅ EKS
+✅ Kubernetes microservices
+✅ Argo CD
+✅ Istio
+✅ HPA
+✅ Prometheus
+✅ Grafana
+
+Now proceed one component at a time.
+
+Step 1 — Alertmanager
+
+Goal: Get notified when something goes wrong instead of continuously watching Grafana.
+
+Your kube-prometheus-stack already installed Alertmanager.
+
+1.1 Check Alertmanager
+kubectl get pods -n monitoring | grep alertmanager
+
+Expected:
+
+alertmanager-monitoring-kube-prometheus-alertmanager-0   2/2   Running
+1.2 Check service
+kubectl get svc -n monitoring | grep alertmanager
+1.3 Create your first alert
+
+Start with basic Kubernetes alerts:
+
+Pod CrashLoopBackOff
+Node NotReady
+High CPU
+High Memory
+Pod unavailable
+HPA at maximum replicas
+
+Don't move to logging until Alertmanager is working.
+
+Step 2 — Centralized Logging
+
+After Alertmanager:
+
+Applications
+     ↓
+Grafana Alloy
+     ↓
+Loki
+     ↓
+Grafana
+
+Purpose:
+
+Instead of:
+
+kubectl logs orders-xxxxx -n retail
+
+you'll be able to search all application logs from Grafana.
+
+For example:
+
+{namespace="retail"}
+
+Then:
+
+{namespace="retail", app="orders"}
+
+And:
+
+{namespace="retail"} |= "error"
+Components
+
+Install in this order:
+
+1. Loki
+2. Grafana Alloy
+3. Configure Grafana → Loki
+4. Generate application traffic
+5. Verify logs
+
+Don't install Alloy before Loki.
+
+Step 3 — Distributed Tracing
+
+After centralized logging:
+
+Microservices
+      ↓
+OpenTelemetry
+      ↓
+Tempo
+      ↓
+Grafana
+
+This lets you trace one request across:
+
+UI
+ ↓
+Checkout
+ ↓
+Orders
+ ↓
+Database
+
+For example:
+
+Request
+ │
+ ├── UI          20ms
+ ├── Checkout    80ms
+ ├── Orders     120ms
+ └── Database   800ms
+
+This helps you find where latency actually occurs.
+
+Step 4 — Improve Istio Observability
+
+You already have:
+
+Istio
+ ├── Istiod
+ ├── Ingress Gateway
+ ├── VirtualService
+ ├── DestinationRule
+ └── Kiali
+
+And:
+
+Prometheus
+Grafana
+Kiali
+
+Now validate:
+
+Istio
+  ↓
+Envoy metrics
+  ↓
+Prometheus
+  ↓
+Grafana
+
+and:
+
+Istio
+  ↓
+Kiali
+  ↓
+Service Graph
+
+Then test your:
+
+orders-v1
+orders-v2
+
+canary routing.
+
+Step 5 — AWS Monitoring
+
+After Kubernetes observability:
+
+CloudWatch
+CloudTrail
+
+Monitor AWS resources such as:
+
+EKS
+ALB
+EC2
+EBS
+DynamoDB
+RDS
+VPC
+NAT Gateway
+
+Your monitoring architecture becomes:
+
+                 AWS
+                  |
+        ┌─────────┴─────────┐
+        ↓                   ↓
+   CloudWatch          Prometheus
+        ↓                   ↓
+   AWS Metrics       Kubernetes Metrics
+                            ↓
+                         Grafana
+Step 6 — Security Observability
+
+Then implement:
+
+CloudTrail
+GuardDuty
+Security Hub
+Amazon Inspector
+Trivy
+
+For Kubernetes:
+
+NetworkPolicy
+RBAC
+Pod Security
+Image scanning
+Secrets management
+Step 7 — SRE
+
+Finally move from monitoring to SRE.
+
+Define:
+
+Availability
+99.9% Orders availability
+Latency
+95% checkout requests < 500ms
+Error rate
+HTTP 5xx < 1%
+
+Then:
+
+SLI
+ ↓
+SLO
+ ↓
+Error Budget
+ ↓
+Alert
+ ↓
+Incident
+Your complete learning path
+
+Follow exactly this sequence:
+
+                 YOUR CURRENT STATE
+                       │
+                       ▼
+             ┌──────────────────┐
+             │ Prometheus       │
+             │ Grafana          │
+             └────────┬─────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 1. Alertmanager    │
+            │ Alerts + Routing    │
+            └─────────┬──────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 2. Central Logging  │
+            │ Loki + Alloy        │
+            └─────────┬──────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 3. Tracing         │
+            │ OTel + Tempo       │
+            └─────────┬──────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 4. Istio           │
+            │ Kiali + Metrics    │
+            └─────────┬──────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 5. AWS Monitoring  │
+            │ CloudWatch         │
+            │ CloudTrail         │
+            └─────────┬──────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 6. Security        │
+            │ GuardDuty/Trivy    │
+            └─────────┬──────────┘
+                      │
+                      ▼
+            ┌────────────────────┐
+            │ 7. SRE             │
+            │ SLI/SLO/Error      │
+            │ Budgets            │
+            └────────────────────┘
+What we should do right now
+
+Don't jump to Loki yet.
+
+Next = Alertmanager.
+
+We'll do it in this exact sequence:
+
+1. Check Alertmanager
+2. Configure Alertmanager
+3. Create CPU alert
+4. Create pod-down alert
+5. Create NodeNotReady alert
+6. Test an alert
+7. Configure notification
+8. Verify Grafana alert
+9. Only then move to Loki
+
+If you want to proceed, start with just:
+
+kubectl get pods -n monitoring
+
+and paste the output. I'll take you through Alertmanager step-by-step without mixing it with Loki, Tempo, or anything else.
